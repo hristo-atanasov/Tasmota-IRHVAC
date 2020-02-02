@@ -1,0 +1,10 @@
+{
+    "domain": "tasmota_irhvac",
+    "name": "Tasmota Irhvac",
+    "documentation": "https://www.home-assistant.io/integrations/generic_thermostat",
+    "requirements": [],
+    "dependencies": [
+      "sensor"
+    ],
+    "codeowners": []
+  }

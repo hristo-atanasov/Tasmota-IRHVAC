@@ -1,12 +1,18 @@
-"""Adds support for IR controlled Air Conditioners via MQTT and Tasmota IRHVAC command."""
+"""Adds support for generic thermostat units."""
 import asyncio
 import logging
-import importlib
 import json
-
-_LOGGER = logging.getLogger(__name__)
-
 import voluptuous as vol
+from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateDevice
+from homeassistant.components import mqtt
+from homeassistant.core import DOMAIN as HA_DOMAIN, callback
+from homeassistant.helpers import condition
+import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.event import (
+    async_track_state_change,
+    async_track_time_interval,
+)
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
     ATTR_AREA_ID,
@@ -68,7 +74,7 @@ from .const import (
     SUPPORT_AWAY_MODE,
     SUPPORT_AUX_HEAT,
     SUPPORT_FAN_MODE,
-    SUPPORT_PRESET_MODE, 
+    SUPPORT_PRESET_MODE,
     SUPPORT_SWING_MODE,
     SUPPORT_OPERATION_MODE,
     SUPPORT_TARGET_HUMIDITY,
@@ -82,6 +88,7 @@ from .const import (
     PRECISION_WHOLE,
     SERVICE_TURN_OFF,
     SERVICE_TURN_ON,
+    SERVICE_SET_PRESET_MODE,
     STATE_OFF,
     STATE_ON,
     STATE_UNKNOWN,
@@ -105,26 +112,18 @@ from .const import (
     TEMP_FAHRENHEIT
     )
 
-from homeassistant.components import mqtt
-from homeassistant.core import DOMAIN as HA_DOMAIN, callback
-from homeassistant.helpers import condition
-from homeassistant.helpers.script import Script
-import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.event import (
-    async_track_state_change,
-    async_track_time_interval)
-from homeassistant.helpers.restore_state import RestoreEntity
-from . import PLATFORM_SCHEMA, ClimateDevice
+_LOGGER = logging.getLogger(__name__)
+SUPPORT_FLAGS = (SUPPORT_TARGET_TEMPERATURE | SUPPORT_FAN_MODE | SUPPORT_SWING_MODE | SUPPORT_PRESET_MODE)
 
 DEFAULT_NAME = 'IR AirConditioner'
 DEFAULT_STATE_TOPIC = 'state'
 DEFAULT_COMMAND_TOPIC = 'topic'
 DEFAULT_PROTOCOL = 'ELECTRA_AC'
-DEFAULT_TARGET_TEMP = 26.0
-DEFAULT_MIN_TEMP = 16.0
-DEFAULT_MAX_TEMP = 32.0
-DEFAULT_PRECISION = 1.0
-DEFAULT_AWAY_TEMP = 24.0
+DEFAULT_TARGET_TEMP = 26
+DEFAULT_MIN_TEMP = 16
+DEFAULT_MAX_TEMP = 32
+DEFAULT_PRECISION = 1
+DEFAULT_AWAY_TEMP = 24
 DEFAULT_MODES_LIST = [HVAC_MODE_COOL, HVAC_MODE_HEAT, HVAC_MODE_DRY, HVAC_MODE_AUTO_FAN, HVAC_MODE_FAN_AUTO]
 DEFAULT_FAN_LIST = [HVAC_FAN_AUTO_MAX, HVAC_FAN_MAX_HIGH, HVAC_FAN_MEDIUM, HVAC_FAN_MIN]
 DEFAULT_SWING_LIST = [SWING_OFF, SWING_VERTICAL]
@@ -164,35 +163,35 @@ CONF_CLEAN = "default_clean_mode"
 CONF_BEEP = "default_beep_mode"
 CONF_SLEEP = "default_sleep_mode"
 
-SUPPORT_FLAGS = (SUPPORT_TARGET_TEMPERATURE | SUPPORT_OPERATION_MODE | SUPPORT_FAN_MODE | SUPPORT_SWING_MODE)
-
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_NAME, default=DEFAULT_NAME): cv.string,
-    vol.Required(CONF_PROTOCOL, default=DEFAULT_PROTOCOL): cv.string,
-    vol.Required(CONF_COMMAND_TOPIC, default=DEFAULT_COMMAND_TOPIC): mqtt.valid_publish_topic,
-    vol.Required(CONF_TEMP_SENSOR): cv.entity_id,
-    vol.Optional(CONF_STATE_TOPIC, default=DEFAULT_STATE_TOPIC): mqtt.valid_subscribe_topic,
-    vol.Optional(CONF_MAX_TEMP, default=DEFAULT_MAX_TEMP): vol.Coerce(float),
-    vol.Optional(CONF_MIN_TEMP, default=DEFAULT_MIN_TEMP): vol.Coerce(float),
-    vol.Optional(CONF_TARGET_TEMP, default=DEFAULT_TARGET_TEMP): vol.Coerce(float),
-    vol.Optional(CONF_INITIAL_OPERATION_MODE, default=DEFAULT_INITIAL_OPERATION_MODE):
-        vol.In([STATE_HEAT, STATE_COOL, STATE_AUTO, STATE_DRY, STATE_FAN_ONLY, STATE_OFF]),
-    vol.Optional(CONF_AWAY_TEMP, default=DEFAULT_AWAY_TEMP): vol.Coerce(float),
-    vol.Optional(CONF_PRECISION, default=DEFAULT_PRECISION): vol.In([PRECISION_TENTHS, PRECISION_HALVES, PRECISION_WHOLE]),
-    vol.Optional(CONF_MODES_LIST, default=DEFAULT_MODES_LIST): vol.All(cv.ensure_list, [vol.In(HVAC_MODES)]),
-    vol.Optional(CONF_FAN_LIST, default=DEFAULT_FAN_LIST): vol.All(cv.ensure_list, [vol.In([FAN_ON, FAN_OFF, FAN_AUTO, FAN_LOW, FAN_MEDIUM, FAN_HIGH, FAN_MIDDLE, FAN_FOCUS, FAN_DIFFUSE, HVAC_FAN_MIN,HVAC_FAN_MEDIUM, HVAC_FAN_MAX, HVAC_FAN_AUTO, HVAC_FAN_MAX_HIGH, HVAC_FAN_AUTO_MAX])]),
-    vol.Optional(CONF_SWING_LIST, default=DEFAULT_SWING_LIST): vol.All(cv.ensure_list, [vol.In([SWING_OFF, SWING_BOTH, SWING_VERTICAL, SWING_HORIZONTAL])]),
-    vol.Optional(CONF_QUIET, default=DEFAULT_CONF_QUIET): cv.string,
-    vol.Optional(CONF_TURBO, default=DEFAULT_CONF_TURBO): cv.string,
-    vol.Optional(CONF_ECONO, default=DEFAULT_CONF_ECONO): cv.string,
-    vol.Optional(CONF_MODEL, default=DEFAULT_CONF_MODEL): cv.string,
-    vol.Optional(CONF_CELSIUS, default=DEFAULT_CONF_CELSIUS): cv.string,
-    vol.Optional(CONF_LIGHT, default=DEFAULT_CONF_LIGHT): cv.string,
-    vol.Optional(CONF_FILTER, default=DEFAULT_CONF_FILTER): cv.string,
-    vol.Optional(CONF_CLEAN, default=DEFAULT_CONF_CLEAN): cv.string,
-    vol.Optional(CONF_BEEP, default=DEFAULT_CONF_BEEP): cv.string,
-    vol.Optional(CONF_SLEEP, default=DEFAULT_CONF_SLEEP): cv.string,
-})
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+    {
+        vol.Required(CONF_NAME, default=DEFAULT_NAME): cv.string,
+        vol.Required(CONF_PROTOCOL, default=DEFAULT_PROTOCOL): cv.string,
+        vol.Required(CONF_COMMAND_TOPIC, default=DEFAULT_COMMAND_TOPIC): mqtt.valid_publish_topic,
+        vol.Required(CONF_TEMP_SENSOR): cv.entity_id,
+        vol.Optional(CONF_STATE_TOPIC, default=DEFAULT_STATE_TOPIC): mqtt.valid_subscribe_topic,
+        vol.Optional(CONF_MAX_TEMP, default=DEFAULT_MAX_TEMP): vol.Coerce(float),
+        vol.Optional(CONF_MIN_TEMP, default=DEFAULT_MIN_TEMP): vol.Coerce(float),
+        vol.Optional(CONF_TARGET_TEMP, default=DEFAULT_TARGET_TEMP): vol.Coerce(float),
+        vol.Optional(CONF_INITIAL_OPERATION_MODE, default=DEFAULT_INITIAL_OPERATION_MODE):
+            vol.In([STATE_HEAT, STATE_COOL, STATE_AUTO, STATE_DRY, STATE_FAN_ONLY, STATE_OFF]),
+        vol.Optional(CONF_AWAY_TEMP, default=DEFAULT_AWAY_TEMP): vol.Coerce(float),
+        vol.Optional(CONF_PRECISION, default=DEFAULT_PRECISION): vol.In([PRECISION_TENTHS, PRECISION_HALVES, PRECISION_WHOLE]),
+        vol.Optional(CONF_MODES_LIST, default=DEFAULT_MODES_LIST): vol.All(cv.ensure_list, [vol.In(HVAC_MODES)]),
+        vol.Optional(CONF_FAN_LIST, default=DEFAULT_FAN_LIST): vol.All(cv.ensure_list, [vol.In([FAN_ON, FAN_OFF, FAN_AUTO, FAN_LOW, FAN_MEDIUM, FAN_HIGH, FAN_MIDDLE, FAN_FOCUS, FAN_DIFFUSE, HVAC_FAN_MIN,HVAC_FAN_MEDIUM, HVAC_FAN_MAX, HVAC_FAN_AUTO, HVAC_FAN_MAX_HIGH, HVAC_FAN_AUTO_MAX])]),
+        vol.Optional(CONF_SWING_LIST, default=DEFAULT_SWING_LIST): vol.All(cv.ensure_list, [vol.In([SWING_OFF, SWING_BOTH, SWING_VERTICAL, SWING_HORIZONTAL])]),
+        vol.Optional(CONF_QUIET, default=DEFAULT_CONF_QUIET): cv.string,
+        vol.Optional(CONF_TURBO, default=DEFAULT_CONF_TURBO): cv.string,
+        vol.Optional(CONF_ECONO, default=DEFAULT_CONF_ECONO): cv.string,
+        vol.Optional(CONF_MODEL, default=DEFAULT_CONF_MODEL): cv.string,
+        vol.Optional(CONF_CELSIUS, default=DEFAULT_CONF_CELSIUS): cv.string,
+        vol.Optional(CONF_LIGHT, default=DEFAULT_CONF_LIGHT): cv.string,
+        vol.Optional(CONF_FILTER, default=DEFAULT_CONF_FILTER): cv.string,
+        vol.Optional(CONF_CLEAN, default=DEFAULT_CONF_CLEAN): cv.string,
+        vol.Optional(CONF_BEEP, default=DEFAULT_CONF_BEEP): cv.string,
+        vol.Optional(CONF_SLEEP, default=DEFAULT_CONF_SLEEP): cv.string,
+    }
+)
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the generic thermostat platform."""
@@ -221,34 +220,40 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     beep = config.get(CONF_BEEP)
     sleep = config.get(CONF_SLEEP)
 
-    async_add_entities([TasmotaIrhvacClimate(
-        hass,
-        topic,
-        protocol,
-        name,
-        sensor_entity_id,
-        state_topic,
-        min_temp,
-        max_temp,
-        target_temp,
-        initial_operation_mode,
-        away_temp,
-        precision,
-        modes_list,
-        fan_list,
-        swing_list,
-        quiet,
-        turbo,
-        econo,
-        model,
-        celsius,
-        light,
-        filterr,
-        clean,
-        beep,
-        sleep)])
+    async_add_entities(
+        [
+            TasmotaIrhvac(
+                hass,
+                topic,
+                protocol,
+                name,
+                sensor_entity_id,
+                state_topic,
+                min_temp,
+                max_temp,
+                target_temp,
+                initial_operation_mode,
+                away_temp,
+                precision,
+                modes_list,
+                fan_list,
+                swing_list,
+                quiet,
+                turbo,
+                econo,
+                model,
+                celsius,
+                light,
+                filterr,
+                clean,
+                beep,
+                sleep
+            )
+        ]
+    )
 
-class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
+
+class TasmotaIrhvac(ClimateDevice, RestoreEntity):
     """Representation of a Generic Thermostat device."""
 
     def __init__(
@@ -277,7 +282,8 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
         filterr,
         clean,
         beep,
-        sleep):
+        sleep,
+    ):
         """Initialize the thermostat."""
         self.topic = topic
         self.hass = hass
@@ -285,15 +291,14 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
         self._name = name
         self.sensor_entity_id = sensor_entity_id
         self.state_topic = state_topic
-        self._initial_operation_mode = initial_operation_mode
-        self._saved_target_temp = target_temp if target_temp is not None else away_temp
+        self._hvac_mode = initial_operation_mode
+        self._saved_target_temp = target_temp or away_temp
         self._temp_precision = precision
-        self._operation_list = modes_list
+        self._hvac_list = modes_list
         self._fan_list = fan_list
         self._fan_mode = fan_list[0]
         self._swing_list = swing_list
         self._swing_mode = swing_list[0]
-        self._current_operation = initial_operation_mode
         self._enabled = False
         self.power_mode = STATE_OFF
         if initial_operation_mode is not STATE_OFF:
@@ -307,7 +312,7 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
         self._unit = hass.config.units.temperature_unit
         self._support_flags = SUPPORT_FLAGS
         if away_temp is not None:
-            self._support_flags = SUPPORT_FLAGS | SUPPORT_AWAY_MODE
+            self._support_flags = SUPPORT_FLAGS | SUPPORT_PRESET_MODE
         self._away_temp = away_temp
         self._is_away = False
         self._modes_list = modes_list
@@ -328,10 +333,10 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
     async def async_added_to_hass(self):
         """Run when entity about to be added."""
         await super().async_added_to_hass()
-
+        # Add listener
         async_track_state_change(
-            self.hass, self.sensor_entity_id, self._async_sensor_changed)
-        
+            self.hass, self.sensor_entity_id, self._async_sensor_changed
+        )
         await self._subscribe_topics()
 
         @callback
@@ -346,26 +351,24 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
         # Check If we have an old state
         old_state = await self.async_get_last_state()
         if old_state is not None:
-            # If we have a previously saved temperature
+            # If we have no initial temperature, restore
             if old_state.attributes.get(ATTR_TEMPERATURE) is not None:
                 self._target_temp = float(old_state.attributes[ATTR_TEMPERATURE])
-            if old_state.attributes.get(ATTR_AWAY_MODE) is not None:
-                self._is_away = str(old_state.attributes[ATTR_AWAY_MODE]) == STATE_ON
-            if self._initial_operation_mode is None and old_state.attributes[ATTR_OPERATION_MODE] is not None:
-                self._current_operation = old_state.attributes[ATTR_OPERATION_MODE]
-                self._enabled = self._current_operation != STATE_OFF
+            if old_state.attributes.get(ATTR_PRESET_MODE) == PRESET_AWAY:
+                self._is_away = True
+            if not self._hvac_mode and old_state.state:
+                self._hvac_mode = old_state.state
+                self._enabled = self._hvac_mode != STATE_OFF
         else:
             # No previous state, try and restore defaults
             if self._target_temp is None:
                 self._target_temp = 26.0
-
-            _LOGGER.warning("No previously saved temperature, setting to %s", self._target_temp)
-
-        
+            _LOGGER.warning(
+                "No previously saved temperature, setting to %s", self._target_temp
+            )
         # Set default state to off
-        if self._current_operation == STATE_OFF:
-            self.power_mode == STATE_OFF
-            self._enabled = False
+        if not self._hvac_mode:
+            self._hvac_mode = HVAC_MODE_OFF
 
     async def _subscribe_topics(self):
         """(Re)Subscribe to topics."""
@@ -385,7 +388,7 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
             if payload['Vendor'] == self._protocol and str(payload['Model']) == self._model:
                 _LOGGER.debug("we have a match")
                 self.power_mode = payload['Power'].lower()
-                self._current_operation = payload['Mode'].lower()
+                self._hvac_mode = payload['Mode'].lower()
                 self._target_temp = payload['Temp']
                 self._celsius = payload['Celsius'].lower()
 
@@ -436,15 +439,6 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
         self._sub_state = await mqtt.subscription.async_unsubscribe_topics(self.hass, self._sub_state)
 
     @property
-    def state(self):
-        """Return the current state."""
-        if self._is_device_active:
-            return self.current_operation
-        if self._enabled:
-            return STATE_IDLE
-        return STATE_OFF
-
-    @property
     def should_poll(self):
         """Return the polling state."""
         return False
@@ -472,9 +466,16 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
         return self._cur_temp
 
     @property
-    def current_operation(self):
+    def hvac_mode(self):
         """Return current operation."""
-        return self._current_operation
+        return self._hvac_mode
+
+    @property
+    def hvac_action(self):
+        """Return the current running hvac operation if supported.
+        Need to be one of CURRENT_HVAC_*.
+        """
+        return self._hvac_mode
 
     @property
     def target_temperature(self):
@@ -482,22 +483,33 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
         return self._target_temp
 
     @property
-    def operation_list(self):
+    def hvac_modes(self):
         """List of available operation modes."""
-        return self._operation_list
+        return self._hvac_list
 
     @property
-    def current_fan_mode(self):
+    def preset_mode(self):
+        """Return the current preset mode, e.g., home, away, temp."""
+        return PRESET_AWAY if self._is_away else PRESET_NONE
+
+    @property
+    def preset_modes(self):
+        """Return a list of available preset modes or PRESET_NONE if _away_temp is undefined."""
+        return [PRESET_NONE, PRESET_AWAY] if self._away_temp else PRESET_NONE
+
+    @property
+    def fan_mode(self):
         """Return the list of available fan modes.
         Requires SUPPORT_FAN_MODE.
         """
         return self._fan_mode
 
     @property
-    def fan_list(self):
+    def fan_modes(self):
         """Return the list of available fan modes.
         Requires SUPPORT_FAN_MODE.
         """
+        #tweek for some ELECTRA_AC devices
         if HVAC_FAN_MAX_HIGH in self._fan_list and HVAC_FAN_AUTO_MAX in self._fan_list:
             new_fan_list = []
             for val in self._fan_list:
@@ -511,31 +523,29 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
         return self._fan_list
 
     @property
-    def current_swing_mode(self):
+    def swing_mode(self):
         """Return the swing setting.
         Requires SUPPORT_SWING_MODE.
         """
         return self._swing_mode
 
     @property
-    def swing_list(self):
+    def swing_modes(self):
         """Return the list of available swing modes.
         Requires SUPPORT_SWING_MODE.
         """
         return self._swing_list
 
-    async def async_set_operation_mode(self, operation_mode):
-        """Set operation mode."""
-
-        if operation_mode not in self._operation_list or operation_mode == HVAC_MODE_OFF:
-            self._current_operation = HVAC_MODE_OFF
+    async def async_set_hvac_mode(self, hvac_mode):
+        """Set hvac mode."""
+        if hvac_mode not in self._hvac_list or hvac_mode == HVAC_MODE_OFF:
+            self._hvac_mode = HVAC_MODE_OFF
             self._enabled = False
             self.power_mode = STATE_OFF
         else:
-            self._current_operation = operation_mode
+            self._hvac_mode = hvac_mode
             self._enabled = True
             self.power_mode = STATE_ON
-
         # Ensure we update the current operation after changing the mode
         self.schedule_update_ha_state()
         await self.hass.async_add_executor_job(self.send_ir)
@@ -543,12 +553,12 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
     async def async_turn_on(self):
         """Turn thermostat on."""
         self.power_mode = STATE_ON
-        # await self.async_set_operation_mode(self.operation_list[0])
-        return
+        await self.async_update_ha_state()
+        await self.hass.async_add_executor_job(self.send_ir)
 
     async def async_turn_off(self):
         """Turn thermostat off."""
-        self._current_operation = STATE_OFF
+        self._hvac_mode = STATE_OFF
         self.power_mode = STATE_OFF
         await self.async_update_ha_state()
         await self.hass.async_add_executor_job(self.send_ir)
@@ -565,6 +575,10 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
 
     async def async_set_fan_mode(self, fan_mode):
         """Set new target fan mode."""
+        if fan_mode not in self._fan_list:
+            _LOGGER.error("Invalid swing mode selected. Got '" + fan_mode + "'. Allowed modes are:")
+            _LOGGER.error(self._fan_list)
+            return
         self._fan_mode = fan_mode
         self.power_mode = STATE_ON
         await self.hass.async_add_executor_job(self.send_ir)
@@ -580,35 +594,6 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
         self.power_mode = STATE_ON
         await self.hass.async_add_executor_job(self.send_ir)
         await self.async_update_ha_state()
-
-    def send_ir(self):
-        curr_operation = self.current_operation
-        fan_speed = self.current_fan_mode
-        
-        # if self.current_operation == STATE_OFF:
-        #     curr_operation = STATE_AUTO
-        #     fan_speed = FAN_AUTO
-
-        if HVAC_FAN_MAX_HIGH in self._fan_list and HVAC_FAN_AUTO_MAX in self._fan_list:
-            if self.current_fan_mode == FAN_HIGH:
-                fan_speed = HVAC_FAN_MAX
-            if self.current_fan_mode == HVAC_FAN_MAX:
-                fan_speed = HVAC_FAN_AUTO
-
-        #Set the swing mode - default off
-        swing_h = STATE_OFF
-        swing_v = STATE_OFF
-        if self.current_swing_mode == SWING_BOTH:
-            swing_h = STATE_AUTO
-            swing_v = STATE_AUTO
-        elif self.current_swing_mode == SWING_HORIZONTAL:
-            swing_h = STATE_AUTO
-        elif self.current_swing_mode == SWING_VERTICAL:
-            swing_v = STATE_AUTO
-        #Poplate the payload
-        payload = '{"Vendor":"' + self._protocol +'","Model":' + self._model + ', "Power":"' + self.power_mode + '","Mode":"' + curr_operation + '","Celsius":"' + self._celsius + '","Temp":' + str(self._target_temp) + ',"FanSpeed":"' + fan_speed + '","SwingV":"' + swing_v + '","SwingH":"' + swing_h + '", "Quiet":"' + self._quiet + '","Turbo":"' + self._turbo + '","Econo":"' + self._econo + '","Light":"' + self._light + '","Filter":"' + self._filterr + '","Clean":"' + self._clean + '","Beep":"' + self._beep + '","Sleep":' + self._sleep + '}'
-        #Publish mqtt message
-        mqtt.async_publish(self.hass,self.topic,payload)
 
     @property
     def min_temp(self):
@@ -648,34 +633,60 @@ class TasmotaIrhvacClimate(ClimateDevice, RestoreEntity):
     def _is_device_active(self):
         """If the toggleable device is currently active."""
         # return self.hass.states.is_state(self.heater_entity_id, STATE_ON)
+        return self.power_mode == STATE_ON 
 
     @property
     def supported_features(self):
         """Return the list of supported features."""
         return self._support_flags
 
-    @property
-    def is_away_mode_on(self):
-        """Return true if away mode is on."""
-        return self._is_away
+    # def set_preset_mode(self, preset_mode):
+    #     """Set new preset mode."""
+    #     if preset_mode == PRESET_AWAY and not self._is_away:
+    #         self._is_away = True
+    #         self._saved_target_temp = self._target_temp
+    #         self._target_temp = self._away_temp
+    #     elif preset_mode == PRESET_NONE and self._is_away:
+    #         self._is_away = False
+    #         self._target_temp = self._saved_target_temp
+    #     await self.hass.async_add_executor_job(self.send_ir)
+    #     await self.async_update_ha_state()
 
-    async def async_turn_away_mode_on(self):
-        """Turn away mode on by setting it on away hold indefinitely."""
-        if self._is_away:
-            return
-        self._is_away = True
-        self._saved_target_temp = self._target_temp
-        self._target_temp = self._away_temp
-
+    async def async_set_preset_mode(self, preset_mode):
+        """Set new preset mode.
+        This method must be run in the event loop and returns a coroutine.
+        """
+        if preset_mode == PRESET_AWAY and not self._is_away:
+            self._is_away = True
+            self._saved_target_temp = self._target_temp
+            self._target_temp = self._away_temp
+        elif preset_mode == PRESET_NONE and self._is_away:
+            self._is_away = False
+            self._target_temp = self._saved_target_temp
         await self.hass.async_add_executor_job(self.send_ir)
         await self.async_update_ha_state()
 
-    async def async_turn_away_mode_off(self):
-        """Turn away off."""
-        if not self._is_away:
-            return
-        self._is_away = False
-        self._target_temp = self._saved_target_temp
-        
-        await self.hass.async_add_executor_job(self.send_ir)
-        await self.async_update_ha_state()
+    def send_ir(self):
+        curr_operation = self._hvac_mode
+        fan_speed = self.fan_mode
+        #tweek for some ELECTRA_AC devices
+        if HVAC_FAN_MAX_HIGH in self._fan_list and HVAC_FAN_AUTO_MAX in self._fan_list:
+            if self.fan_mode == FAN_HIGH:
+                fan_speed = HVAC_FAN_MAX
+            if self.fan_mode == HVAC_FAN_MAX:
+                fan_speed = HVAC_FAN_AUTO
+
+        #Set the swing mode - default off
+        swing_h = STATE_OFF
+        swing_v = STATE_OFF
+        if self.swing_mode == SWING_BOTH:
+            swing_h = STATE_AUTO
+            swing_v = STATE_AUTO
+        elif self.swing_mode == SWING_HORIZONTAL:
+            swing_h = STATE_AUTO
+        elif self.swing_mode == SWING_VERTICAL:
+            swing_v = STATE_AUTO
+        #Poplate the payload
+        payload = '{"Vendor":"' + self._protocol +'","Model":' + self._model + ', "Power":"' + self.power_mode + '","Mode":"' + curr_operation + '","Celsius":"' + self._celsius + '","Temp":' + str(self._target_temp) + ',"FanSpeed":"' + fan_speed + '","SwingV":"' + swing_v + '","SwingH":"' + swing_h + '", "Quiet":"' + self._quiet + '","Turbo":"' + self._turbo + '","Econo":"' + self._econo + '","Light":"' + self._light + '","Filter":"' + self._filterr + '","Clean":"' + self._clean + '","Beep":"' + self._beep + '","Sleep":' + self._sleep + '}'
+        #Publish mqtt message
+        mqtt.async_publish(self.hass,self.topic,payload)
