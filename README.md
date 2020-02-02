@@ -31,3 +31,5 @@ Change the name with the desired name.
 After you finish with the config, save it and restart Home Assistant. Once restarted you can add in LovelaceUI new thermostat card and select the newly integrated AC.
 
 As an addition you can add these 2 scripts from scripts.yaml in your scripts.yaml and use them to send all kind of HEX IR codes and RAW IR codes, by just naming your multisensors using room name (lowercase) and the word “Multisensor”. Like “kitchenMultisensor” or “livingroomMultisensor”.
+
+You can then use these scripts, for the exmple, in a button card. Create a new card, put inside it the content of the card_configuration.yaml, change codes and values with your desired codes and values and test it. :)
