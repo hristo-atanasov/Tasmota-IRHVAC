@@ -1,0 +1,12 @@
+ir_code:
+  sequence:
+  - data_template:
+      payload: '{"Protocol":"{{ protocol }}","Bits": {{ bits }},"Data": 0x{{ data }}}'
+      topic: 'cmnd/{{ room }}Multisensor/irsend'
+    service: mqtt.publish
+ir_raw:
+  sequence:
+  - data_template:
+      payload: '0, {{ data }}'
+      topic: 'cmnd/{{ room }}Multisensor/irsend'
+    service: mqtt.publish
