@@ -13,7 +13,10 @@ Tasmota configuration looks like this
 After configuration open Tasmota console, point your AC remote to the IR receiver and press the button for turning the AC on.
 
 If everything in the above steps is made right, you should see a line like this (example with Fujitsu Air Conditioner):
+
+```json
 {'IrReceived': {'Protocol': 'FUJITSU_AC', 'Bits': 128, 'Data': '0x0x1463001010FE09304013003008002025', 'Repeat': 0, 'IRHVAC': {'Vendor': 'FUJITSU_AC', 'Model': 1, 'Power': 'On', 'Mode': 'fan_only', 'Celsius': 'On', 'Temp': 20, 'FanSpeed': 'Auto', 'SwingV': 'Off', 'SwingH': 'Off', 'Quiet': 'Off', 'Turbo': 'Off', 'Econo': 'Off', 'Light': 'Off', 'Filter': 'Off', 'Clean': 'Off', 'Beep': 'Off', 'Sleep': -1}}}
+```
 
 If protocol is no ‘Unknown’ and you see the ‘IRHVAC’ key, containing information, you can be sure that it will work for you.
 
@@ -42,4 +45,98 @@ This is a pic of 2 of my Tasmota IR transceivers, that I have mounted under my A
 
 As an addition you can add these 2 scripts from scripts.yaml in your scripts.yaml and use them to send all kind of HEX IR codes and RAW IR codes, by just naming your multisensors using room name (lowercase) and the word “Multisensor”. Like “kitchenMultisensor” or “livingroomMultisensor”.
 
+```yaml
+ir_code:
+  sequence:
+  - data_template:
+      payload: '{"Protocol":"{{ protocol }}","Bits": {{ bits }},"Data": 0x{{ data }}}'
+      topic: 'cmnd/{{ room }}Multisensor/irsend'
+    service: mqtt.publish
+ir_raw:
+  sequence:
+  - data_template:
+      payload: '0, {{ data }}'
+      topic: 'cmnd/{{ room }}Multisensor/irsend'
+    service: mqtt.publish
+```
+
 You can then use these scripts, for the exmple, in a button card. Create a new card, put inside it the content of the card_configuration.yaml, change codes and values with your desired codes and values and test it. :)
+
+```yaml
+cards:
+  - cards:
+      - action: service
+        color: white
+        icon: 'mdi:power'
+        name: Turn On Audio HEX
+        service:
+          action: ir_code
+          data:
+            bits: 12
+            data: A80
+            protocol: SONY
+            room: kitchen
+          domain: script
+        style:
+          - color: white
+          - background: green
+          - '--disabled-text-color': white
+        type: 'custom:button-card'
+      - action: service
+        color: white
+        icon: 'mdi:power'
+        name: Turn Off Audio HEX
+        service:
+          action: ir_code
+          data:
+            bits: 12
+            data: E85
+            protocol: SONY
+            room: kitchen
+          domain: script
+        style:
+          - color: white
+          - background: red
+          - '--disabled-text-color': white
+        type: 'custom:button-card'
+      - action: service
+        color: white
+        icon: 'mdi:power'
+        name: Test AC Raw
+        service:
+          action: ir_raw
+          data:
+            data: >-
+              3290, 1602,  424, 390,  424, 390,  424, 1232,  398, 390,  424,
+              1212,  420, 390,  424, 390,  424, 390,  424, 1232,  398, 1234, 
+              398, 390,  424, 390,  426, 390,  424, 1232,  400, 1230,  398,
+              392,  424, 390,  426, 390,  426, 390,  424, 390,  424, 390,  424,
+              390,  424, 392,  424, 390,  424, 392,  424, 390,  424, 390,  424,
+              390,  424, 1232,  398, 390,  424, 390,  426, 390,  424, 390,  424,
+              392,  424, 390,  424, 392,  426, 1230,  400, 390,  424, 390,  426,
+              390,  424, 390,  424, 1232,  400, 1232,  398, 1232,  398, 1232, 
+              400, 1232,  398, 1232,  400, 1232,  400, 1232,  400, 390,  426,
+              390,  424, 1206,  424, 390,  424, 390,  424, 392,  424, 390,  424,
+              392,  424, 390,  426, 390,  424, 390,  424, 1230,  402, 1230, 
+              402, 390,  424, 390,  424, 1230,  402, 390,  424, 390,  424, 390, 
+              424, 390,  424, 390,  426, 390,  424, 1230,  402, 1228,  402,
+              390,  424, 390,  424, 390,  426, 390,  424, 390,  426, 390,  424,
+              390,  424, 390,  426, 390,  426, 390,  424, 390,  424, 390,  426,
+              390,  424, 390,  424, 392,  426, 390,  424, 390,  424, 392,  424,
+              390,  424, 390,  424, 390,  424, 390,  424, 390,  424, 390,  424,
+              390,  424, 390,  426, 390,  426, 390,  424, 390,  424, 392,  424,
+              390,  424, 390,  424, 390,  424, 390,  424, 392,  424, 390,  424,
+              390,  424, 390,  426, 390,  424, 392,  424, 390,  424, 392,  424,
+              390,  424, 390,  424, 1228,  404, 388,  424, 390,  424, 392,  424,
+              1228,  404, 1228,  402, 1228,  402, 390,  426, 1228,  402, 390, 
+              424, 390,  424
+            room: bedroom
+          domain: script
+        style:
+          - color: white
+          - background: blue
+          - '--disabled-text-color': white
+        type: 'custom:button-card'
+    type: vertical-stack
+type: vertical-stack
+```
