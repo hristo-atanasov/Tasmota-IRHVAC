@@ -1,0 +1,55 @@
+climate:
+  - platform: tasmota_irhvac
+    name: "Daewoo IRHvac"
+    command_topic: "cmnd/kitchenMultisensor/irhvac"
+    state_topic: "tele/kitchenMultisensor/RESULT"
+    temperature_sensor: sensor.kitchen_temperature
+    protocol: "ELECTRA_AC"
+    min_temp: 16 #optional - default 16 int value
+    max_temp: 32 #optional - default 32 int value
+    target_temp: 26 #optional - default 26 int value
+    initial_operation_mode: "off" # optional - default "off" string value (one of the "supported_modes")
+    away_temp: 24 #optional - default 24 int value
+    precision: 1 #optional - default 1 int or float value. Can be set to 1, 0.5 or 0.1
+    supported_modes:
+      - "heat"
+      - "cool"
+      - "dry"
+      - "fan_only"
+      - "auto"
+      - "off" #Turns the AC off - Should be quoted
+      # Some devices have "auto" and "fan_only" chaned
+      # If following two lines are uncommented, "auto" and "fan" shoud be commented
+      #- auto_fan_only #if remote shows fan but tasmota says auto
+      #- fan_only_auto #if remote shows auto but tasmota says fan
+    supported_fan_speeds:
+      # Some devices say max,but it is high, and auto which is max
+      # If you uncomment the following two, you have to comment high and max
+      # - auto_max #woud become max
+      # - max_high #would become high
+      #- on
+      #- off
+      #- low
+      - "medium"
+      - "high"
+      #- middle
+      #- focus
+      #- diffuse
+      - "min"
+      - "max"
+      #- auto
+    supported_swing_list:
+      - "off"
+      - "vertical" #up to down
+      # - horizontal # Left to right
+      # - both
+    default_quiet_mode: "Off" #optional - default "Off" string value
+    default_turbo_mode: "Off" #optional - default "Off" string value
+    default_econo_mode: "Off" #optional - default "Off" string value
+    hvac_model: "-1" #optional - default "1" string value
+    celsius_mode: "On" #optional - default "On" string value
+    default_light_mode: "Off" #optional - default "Off" string value
+    default_filter_mode: "Off" #optional - default "Off" string value
+    default_clean_mode: "Off" #optional - default "Off" string value
+    default_beep_mode: "Off" #optional - default "Off" string value
+    default_sleep_mode: "-1" #optional - default "-1" string value
