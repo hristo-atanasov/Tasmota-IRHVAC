@@ -13,4 +13,4 @@ If protocol is no ‘Unknown’ and you see the ‘IRHVAC’ key, containing inf
 
 Next step is to download the files from this repo and place them in a folder named "tasmota_irhvac". Then place this folder in your "custom_components" folder.
 Reastart Home Assistant!
-After restart put the following config in your configuration.yaml file, but don’t save it yet, because you’ll need to replace all values with your AC values
+After restart put the config from "configuration.yal" in your configuration.yaml file, but don’t save it yet, because you’ll need to replace all values with your AC values.
