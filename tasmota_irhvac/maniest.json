@@ -4,6 +4,7 @@
     "documentation": "https://www.home-assistant.io/integrations/generic_thermostat",
     "requirements": [],
     "dependencies": [
+      "mqtt",
       "sensor"
     ],
     "codeowners": []
