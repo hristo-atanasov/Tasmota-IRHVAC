@@ -14,3 +14,20 @@ If protocol is no ‘Unknown’ and you see the ‘IRHVAC’ key, containing inf
 Next step is to download the files from this repo and place them in a folder named "tasmota_irhvac". Then place this folder in your "custom_components" folder.
 Reastart Home Assistant!
 After restart put the config from "configuration.yal" in your configuration.yaml file, but don’t save it yet, because you’ll need to replace all values with your AC values.
+Using your remote and the IR Transceiver do the following steps to find you AC values that you have to fill in. You can find these values by looking in the console for them. They will appear in the ‘IrReceived’ JSON line (mentioned earlier).
+Cycle trough all of your AC modes and write them in supported_modes. I have left some possible values commented.
+
+Cycle trough your fan speeds and and write them down in supported_fan_speeds
+
+If your AC doesnt support horizontal swinging remove horizontal and both from supported_swing_list
+
+Enter your hvac_model
+
+Change the “min_temp” and “max_temp” values with your AC min and max temp.
+target_temp is the initial target temp. 26 is default value and if you don’t want to change it, you can just remove the line.
+away_temp is the temp that will be set in away mode. If you don’t want to change it or you don’t need it you can remove that line.
+You can also remove all lines that doesn’t need to be changed and are marked with “optional”.
+Change the name with the desired name.
+After you finish with the config, save it and restart Home Assistant. Once restarted you can add in LovelaceUI new thermostat card and select the newly integrated AC.
+
+As an addition you can add these 2 scripts from scripts.yaml in your scripts.yaml and use them to send all kind of HEX IR codes and RAW IR codes, by just naming your multisensors using room name (lowercase) and the word “Multisensor”. Like “kitchenMultisensor” or “livingroomMultisensor”.
