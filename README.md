@@ -140,3 +140,5 @@ cards:
     type: vertical-stack
 type: vertical-stack
 ```
+
+More info about parts needed and discussion about it: [IN THIS HA COMMUNITY THREAD](https://community.home-assistant.io/t/tasmota-mqtt-irhvac-controler/162915/31)
