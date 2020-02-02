@@ -1,0 +1,76 @@
+cards:
+  - cards:
+      - action: service
+        color: white
+        icon: 'mdi:power'
+        name: Turn On Audio HEX
+        service:
+          action: ir_code
+          data:
+            bits: 12
+            data: A80
+            protocol: SONY
+            room: kitchen
+          domain: script
+        style:
+          - color: white
+          - background: green
+          - '--disabled-text-color': white
+        type: 'custom:button-card'
+      - action: service
+        color: white
+        icon: 'mdi:power'
+        name: Turn Off Audio HEX
+        service:
+          action: ir_code
+          data:
+            bits: 12
+            data: E85
+            protocol: SONY
+            room: kitchen
+          domain: script
+        style:
+          - color: white
+          - background: red
+          - '--disabled-text-color': white
+        type: 'custom:button-card'
+      - action: service
+        color: white
+        icon: 'mdi:power'
+        name: Test AC Raw
+        service:
+          action: ir_raw
+          data:
+            data: >-
+              3290, 1602,  424, 390,  424, 390,  424, 1232,  398, 390,  424,
+              1212,  420, 390,  424, 390,  424, 390,  424, 1232,  398, 1234, 
+              398, 390,  424, 390,  426, 390,  424, 1232,  400, 1230,  398,
+              392,  424, 390,  426, 390,  426, 390,  424, 390,  424, 390,  424,
+              390,  424, 392,  424, 390,  424, 392,  424, 390,  424, 390,  424,
+              390,  424, 1232,  398, 390,  424, 390,  426, 390,  424, 390,  424,
+              392,  424, 390,  424, 392,  426, 1230,  400, 390,  424, 390,  426,
+              390,  424, 390,  424, 1232,  400, 1232,  398, 1232,  398, 1232, 
+              400, 1232,  398, 1232,  400, 1232,  400, 1232,  400, 390,  426,
+              390,  424, 1206,  424, 390,  424, 390,  424, 392,  424, 390,  424,
+              392,  424, 390,  426, 390,  424, 390,  424, 1230,  402, 1230, 
+              402, 390,  424, 390,  424, 1230,  402, 390,  424, 390,  424, 390, 
+              424, 390,  424, 390,  426, 390,  424, 1230,  402, 1228,  402,
+              390,  424, 390,  424, 390,  426, 390,  424, 390,  426, 390,  424,
+              390,  424, 390,  426, 390,  426, 390,  424, 390,  424, 390,  426,
+              390,  424, 390,  424, 392,  426, 390,  424, 390,  424, 392,  424,
+              390,  424, 390,  424, 390,  424, 390,  424, 390,  424, 390,  424,
+              390,  424, 390,  426, 390,  426, 390,  424, 390,  424, 392,  424,
+              390,  424, 390,  424, 390,  424, 390,  424, 392,  424, 390,  424,
+              390,  424, 390,  426, 390,  424, 392,  424, 390,  424, 392,  424,
+              390,  424, 390,  424, 1228,  404, 388,  424, 390,  424, 392,  424,
+              1228,  404, 1228,  402, 1228,  402, 390,  426, 1228,  402, 390, 
+              424, 390,  424
+            room: bedroom
+          domain: script
+        style:
+          - color: white
+          - background: blue
+          - '--disabled-text-color': white
+        type: 'custom:button-card'
+    type: vertical-stack
+type: vertical-stack
