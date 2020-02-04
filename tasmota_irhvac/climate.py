@@ -1,21 +1,16 @@
 """Adds support for generic thermostat units."""
 import json
 import logging
-
 import voluptuous as vol
+import homeassistant.helpers.config_validation as cv
 
 from homeassistant.components import mqtt
 from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateDevice
 from homeassistant.core import callback
-import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import (
-    ATTR_PRESET_MODE,
-    ATTR_TEMPERATURE,
-    CONF_NAME,
-    EVENT_HOMEASSISTANT_START,
+from homeassistant.components.climate.const import (
     FAN_AUTO,
     FAN_DIFFUSE,
     FAN_FOCUS,
@@ -25,59 +20,102 @@ from .const import (
     FAN_MIDDLE,
     FAN_OFF,
     FAN_ON,
-    HVAC_FAN_AUTO,
-    HVAC_FAN_AUTO_MAX,
-    HVAC_FAN_MAX,
-    HVAC_FAN_MAX_HIGH,
-    HVAC_FAN_MEDIUM,
-    HVAC_FAN_MIN,
-    HVAC_MODE_AUTO_FAN,
-    HVAC_MODE_COOL,
     HVAC_MODE_DRY,
-    HVAC_MODE_FAN_AUTO,
+    ATTR_PRESET_MODE,
+    HVAC_MODE_COOL,
     HVAC_MODE_HEAT,
     HVAC_MODE_OFF,
-    HVAC_MODES,
+    PRESET_AWAY,
+    PRESET_NONE,
+    SUPPORT_FAN_MODE,
+    SUPPORT_SWING_MODE,
+    SUPPORT_PRESET_MODE,
+    SUPPORT_TARGET_TEMPERATURE,
+    SWING_BOTH,
+    SWING_HORIZONTAL,
+    SWING_OFF,
+    SWING_VERTICAL
+)
+
+from homeassistant.const import (
+    ATTR_TEMPERATURE,
+    CONF_NAME,
+    EVENT_HOMEASSISTANT_START,
     PRECISION_HALVES,
     PRECISION_TENTHS,
     PRECISION_WHOLE,
-    PRESET_AWAY,
-    PRESET_NONE,
+    STATE_ON,
+    STATE_OFF,
+    STATE_UNKNOWN
+)
+
+from .const import (
     STATE_AUTO,
     STATE_COOL,
     STATE_DRY,
     STATE_FAN_ONLY,
     STATE_HEAT,
-    STATE_OFF,
-    STATE_ON,
-    STATE_UNKNOWN,
-    SUPPORT_FAN_MODE,
-    SUPPORT_PRESET_MODE,
-    SUPPORT_SWING_MODE,
-    SUPPORT_TARGET_TEMPERATURE,
-    SWING_BOTH,
-    SWING_HORIZONTAL,
-    SWING_OFF,
-    SWING_VERTICAL,
+    HVAC_FAN_AUTO,
+    HVAC_FAN_MIN,
+    HVAC_FAN_MEDIUM,
+    HVAC_FAN_MAX,
+    HVAC_MODE_AUTO_FAN,
+    HVAC_MODE_FAN_AUTO,
+    HVAC_FAN_MAX_HIGH,
+    HVAC_FAN_AUTO_MAX,
+    HVAC_MODE_OFF,
+    HVAC_MODE_HEAT,
+    HVAC_MODE_COOL,
+    HVAC_MODE_HEAT_COOL,
+    HVAC_MODE_AUTO,
+    HVAC_MODE_DRY,
+    HVAC_MODE_FAN_ONLY,
+    HVAC_MODES,
+    CONF_PROTOCOL,
+    CONF_COMMAND_TOPIC,
+    CONF_STATE_TOPIC,
+    CONF_TEMP_SENSOR,
+    CONF_MIN_TEMP,
+    CONF_MAX_TEMP,
+    CONF_TARGET_TEMP,
+    CONF_INITIAL_OPERATION_MODE,
+    CONF_AWAY_TEMP,
+    CONF_PRECISION,
+    CONF_MODES_LIST,
+    CONF_FAN_LIST,
+    CONF_SWING_LIST,
+    CONF_QUIET,
+    CONF_TURBO,
+    CONF_ECONO,
+    CONF_MODEL,
+    CONF_CELSIUS,
+    CONF_LIGHT,
+    CONF_FILTER,
+    CONF_CLEAN,
+    CONF_BEEP,
+    CONF_SLEEP,
+    DEFAULT_NAME,
+    DEFAULT_STATE_TOPIC,
+    DEFAULT_COMMAND_TOPIC,
+    DEFAULT_PROTOCOL,
+    DEFAULT_TARGET_TEMP,
+    DEFAULT_MIN_TEMP,
+    DEFAULT_MAX_TEMP,
+    DEFAULT_PRECISION,
+    DEFAULT_AWAY_TEMP,
+    DEFAULT_FAN_LIST,
+    DEFAULT_CONF_QUIET,
+    DEFAULT_CONF_TURBO,
+    DEFAULT_CONF_ECONO,
+    DEFAULT_CONF_MODEL,
+    DEFAULT_CONF_CELSIUS,
+    DEFAULT_CONF_LIGHT,
+    DEFAULT_CONF_FILTER,
+    DEFAULT_CONF_CLEAN,
+    DEFAULT_CONF_BEEP,
+    DEFAULT_CONF_SLEEP,
 )
 
-_LOGGER = logging.getLogger(__name__)
-SUPPORT_FLAGS = (
-    SUPPORT_TARGET_TEMPERATURE
-    | SUPPORT_FAN_MODE
-    | SUPPORT_SWING_MODE
-    | SUPPORT_PRESET_MODE
-)
-
-DEFAULT_NAME = "IR AirConditioner"
-DEFAULT_STATE_TOPIC = "state"
-DEFAULT_COMMAND_TOPIC = "topic"
-DEFAULT_PROTOCOL = "ELECTRA_AC"
-DEFAULT_TARGET_TEMP = 26
-DEFAULT_MIN_TEMP = 16
-DEFAULT_MAX_TEMP = 32
-DEFAULT_PRECISION = 1
-DEFAULT_AWAY_TEMP = 24
 DEFAULT_MODES_LIST = [
     HVAC_MODE_COOL,
     HVAC_MODE_HEAT,
@@ -85,43 +123,18 @@ DEFAULT_MODES_LIST = [
     HVAC_MODE_AUTO_FAN,
     HVAC_MODE_FAN_AUTO,
 ]
-DEFAULT_FAN_LIST = [HVAC_FAN_AUTO_MAX, HVAC_FAN_MAX_HIGH, HVAC_FAN_MEDIUM, HVAC_FAN_MIN]
+
 DEFAULT_SWING_LIST = [SWING_OFF, SWING_VERTICAL]
 DEFAULT_INITIAL_OPERATION_MODE = STATE_OFF
-DEFAULT_CONF_QUIET = "off"
-DEFAULT_CONF_TURBO = "off"
-DEFAULT_CONF_ECONO = "off"
-DEFAULT_CONF_MODEL = "-1"
-DEFAULT_CONF_CELSIUS = "on"
-DEFAULT_CONF_LIGHT = "off"
-DEFAULT_CONF_FILTER = "off"
-DEFAULT_CONF_CLEAN = "off"
-DEFAULT_CONF_BEEP = "off"
-DEFAULT_CONF_SLEEP = "-1"
 
-CONF_PROTOCOL = "protocol"
-CONF_COMMAND_TOPIC = "command_topic"
-CONF_STATE_TOPIC = "state_topic"
-CONF_TEMP_SENSOR = "temperature_sensor"
-CONF_MIN_TEMP = "min_temp"
-CONF_MAX_TEMP = "max_temp"
-CONF_TARGET_TEMP = "target_temp"
-CONF_INITIAL_OPERATION_MODE = "initial_operation_mode"
-CONF_AWAY_TEMP = "away_temp"
-CONF_PRECISION = "precision"
-CONF_MODES_LIST = "supported_modes"
-CONF_FAN_LIST = "supported_fan_speeds"
-CONF_SWING_LIST = "supported_swing_list"
-CONF_QUIET = "default_quiet_mode"
-CONF_TURBO = "default_turbo_mode"
-CONF_ECONO = "default_econo_mode"
-CONF_MODEL = "hvac_model"
-CONF_CELSIUS = "celsius_mode"
-CONF_LIGHT = "default_light_mode"
-CONF_FILTER = "default_filter_mode"
-CONF_CLEAN = "default_clean_mode"
-CONF_BEEP = "default_beep_mode"
-CONF_SLEEP = "default_sleep_mode"
+_LOGGER = logging.getLogger(__name__)
+
+SUPPORT_FLAGS = (
+    SUPPORT_TARGET_TEMPERATURE
+    | SUPPORT_FAN_MODE
+    | SUPPORT_SWING_MODE
+    | SUPPORT_PRESET_MODE
+)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -190,33 +203,32 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
-
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the generic thermostat platform."""
     name = config.get(CONF_NAME)
     topic = config.get(CONF_COMMAND_TOPIC)
     protocol = config.get(CONF_PROTOCOL)
     sensor_entity_id = config.get(CONF_TEMP_SENSOR)
-    state_topic = config.get(CONF_STATE_TOPIC)
-    min_temp = config.get(CONF_MIN_TEMP)
-    max_temp = config.get(CONF_MAX_TEMP)
-    target_temp = config.get(CONF_TARGET_TEMP)
-    initial_operation_mode = config.get(CONF_INITIAL_OPERATION_MODE)
-    away_temp = config.get(CONF_AWAY_TEMP)
-    precision = config.get(CONF_PRECISION)
-    modes_list = config.get(CONF_MODES_LIST)
-    fan_list = config.get(CONF_FAN_LIST)
-    swing_list = config.get(CONF_SWING_LIST)
-    quiet = config.get(CONF_QUIET)
-    turbo = config.get(CONF_TURBO)
-    econo = config.get(CONF_ECONO)
-    model = config.get(CONF_MODEL)
-    celsius = config.get(CONF_CELSIUS)
-    light = config.get(CONF_LIGHT)
-    filterr = config.get(CONF_FILTER)
-    clean = config.get(CONF_CLEAN)
-    beep = config.get(CONF_BEEP)
-    sleep = config.get(CONF_SLEEP)
+    state_topic = config[CONF_STATE_TOPIC]
+    min_temp = config[CONF_MIN_TEMP]
+    max_temp = config[CONF_MAX_TEMP]
+    target_temp = config[CONF_TARGET_TEMP]
+    initial_operation_mode = config[CONF_INITIAL_OPERATION_MODE]
+    away_temp = config[CONF_AWAY_TEMP]
+    precision = config[CONF_PRECISION]
+    modes_list = config[CONF_MODES_LIST]
+    fan_list = config[CONF_FAN_LIST]
+    swing_list = config[CONF_SWING_LIST]
+    quiet = config[CONF_QUIET]
+    turbo = config[CONF_TURBO]
+    econo = config[CONF_ECONO]
+    model = config[CONF_MODEL]
+    celsius = config[CONF_CELSIUS]
+    light = config[CONF_LIGHT]
+    filterr = config[CONF_FILTER]
+    clean = config[CONF_CLEAN]
+    beep = config[CONF_BEEP]
+    sleep = config[CONF_SLEEP]
 
     async_add_entities(
         [
@@ -706,43 +718,26 @@ class TasmotaIrhvac(ClimateDevice, RestoreEntity):
             swing_h = STATE_AUTO
         elif self.swing_mode == SWING_VERTICAL:
             swing_v = STATE_AUTO
-        # Poplate the payload
-        payload = (
-            '{"Vendor":"'
-            + self._protocol
-            + '","Model":'
-            + self._model
-            + ', "Power":"'
-            + self.power_mode
-            + '","Mode":"'
-            + curr_operation
-            + '","Celsius":"'
-            + self._celsius
-            + '","Temp":'
-            + str(self._target_temp)
-            + ',"FanSpeed":"'
-            + fan_speed
-            + '","SwingV":"'
-            + swing_v
-            + '","SwingH":"'
-            + swing_h
-            + '", "Quiet":"'
-            + self._quiet
-            + '","Turbo":"'
-            + self._turbo
-            + '","Econo":"'
-            + self._econo
-            + '","Light":"'
-            + self._light
-            + '","Filter":"'
-            + self._filterr
-            + '","Clean":"'
-            + self._clean
-            + '","Beep":"'
-            + self._beep
-            + '","Sleep":'
-            + self._sleep
-            + "}"
-        )
+        # Populate the payload
+        payload_data = {
+            "Vendor": self._protocol,
+            "Model": self._model,
+            "Power": self.power_mode,
+            "Mode": curr_operation,
+            "Celsius": self._celsius,
+            "Temp": self._target_temp,
+            "FanSpeed": fan_speed,
+            "SwingV": swing_v,
+            "SwingH": swing_h,
+            "Quiet": self._quiet,
+            "Turbo": self._turbo,
+            "Econo": self._econo,
+            "Light": self._light,
+            "Filter": self._filterr,
+            "Clean": self._clean,
+            "Beep": self._beep,
+            "Sleep": self._sleep
+            }
+        payload = (json.dumps(payload_data))
         # Publish mqtt message
         mqtt.async_publish(self.hass, self.topic, payload)
