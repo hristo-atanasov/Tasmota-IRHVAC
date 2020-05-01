@@ -31,7 +31,7 @@ with payload of:
 ```
 where *light:* can be "on" or "off" and *entity_id:* can be your climate entity_id, like, for example, *climate.kitchen_ac*
 
-***tasmota_irhvac.filters***
+***tasmota_irhvac.set_filters***
 with payload of:
 ```javacript
 {filters: "on", entity_id: clima.your_clima_entity_id}
@@ -39,21 +39,21 @@ with payload of:
 where *filters:* can be "on" or "off" and *entity_id:* can be your climate entity_id, like, for example, *climate.kitchen_ac*
 * Note that it is **filters** instead of **filter**, because "filter" is reserved word and we cannot use it.*
 
-***tasmota_irhvac.clean***
+***tasmota_irhvac.set_clean***
 with payload of:
 ```javacript
 {clean: "on", entity_id: clima.your_clima_entity_id}
 ```
 where *clean:* can be "on" or "off" and *entity_id:* can be your climate entity_id, like, for example, *climate.kitchen_ac*
 
-***tasmota_irhvac.beep***
+***tasmota_irhvac.set_beep***
 with payload of:
 ```javacript
 {beep: "on", entity_id: clima.your_clima_entity_id}
 ```
 where *beep:* can be "on" or "off" and *entity_id:* can be your climate entity_id, like, for example, *climate.kitchen_ac*
 
-***tasmota_irhvac.sleep***
+***tasmota_irhvac.set_sleep***
 with payload of:
 ```javacript
 {sleep: "-1", entity_id: clima.your_clima_entity_id}
