@@ -104,3 +104,49 @@ DEFAULT_CONF_FILTER = "off"
 DEFAULT_CONF_CLEAN = "off"
 DEFAULT_CONF_BEEP = "off"
 DEFAULT_CONF_SLEEP = "-1"
+
+ATTR_NAME = "name"
+ATTR_VALUE = "value"
+
+DATA_KEY = 'tasmota_irhvac.climate'
+DOMAIN = 'tasmota_irhvac'
+
+ATTR_ECONO = 'econo'
+ATTR_TURBO = 'turbo'
+ATTR_QUIET = 'quiet'
+ATTR_LIGHT = 'light'
+ATTR_FILTERS = 'filters'
+ATTR_CLEAN = 'clean'
+ATTR_BEEP = 'beep'
+ATTR_SLEEP = 'sleep'
+
+SERVICE_ECONO_MODE = 'set_econo'
+SERVICE_TURBO_MODE = 'set_turbo'
+SERVICE_QUIET_MODE = 'set_quiet'
+SERVICE_LIGHT_MODE = 'set_light'
+SERVICE_FILTERS_MODE = 'set_filters'
+SERVICE_CLEAN_MODE = 'set_clean'
+SERVICE_BEEP_MODE = 'set_beep'
+SERVICE_SLEEP_MODE = 'set_sleep'
+
+# Map attributes to properties of the state object
+ATTRIBUTES_IRHVAC = {
+    ATTR_ECONO: 'econo',
+    ATTR_TURBO: 'turbo',
+    ATTR_QUIET: 'quiet',
+    ATTR_LIGHT: 'light',
+    ATTR_FILTERS: 'filters',
+    ATTR_CLEAN: 'clean',
+    ATTR_BEEP: 'beep',
+    ATTR_SLEEP: 'sleep',
+
+}
+
+ON_OFF_LIST = [
+    'ON',
+    'OFF',
+    'On',
+    'Off',
+    'on',
+    'off'
+]
