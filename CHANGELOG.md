@@ -15,6 +15,7 @@ where *econo* can be "on" or "off" and entity_id can be your climate entity_id, 
 with payload of:
 ```javacript
 {turbo: "on", entity_id: clima.your_clima_entity_id}
+```
 where *turbo* can be "on" or "off" and entity_id can be your climate entity_id, like, for example, *climate.kitchen_ac*
 ***tasmota_irhvac.set_quiet***
 with payload of:
