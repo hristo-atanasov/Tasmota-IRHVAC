@@ -1,4 +1,4 @@
-#Tasmota IRHVAC for HA v0.108+
+# Tasmota IRHVAC for HA v0.108+
 Supprort for setting econo, turbo, quiet, light, filters, clean, beep and sleep via newly added services
 
 In Tasmota IRHVAC for HA v0.108+ I've added 8 more services for controlling Air Conditioner's functions like these mentioned above. By adding this functionality, this doesnt mean, that your AC support it. Nor that Tasmota IRHVAC library supports it. You are using this functionality on your own will and risk.
