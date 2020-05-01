@@ -37,6 +37,7 @@ with payload of:
 {filters: "on", entity_id: clima.your_clima_entity_id}
 ```
 where *filters:* can be "on" or "off" and *entity_id:* can be your climate entity_id, like, for example, *climate.kitchen_ac*
+* Note that it is **filters** instead of **filter**, because "filter" is reserved word and we cannot use it.*
 
 ***tasmota_irhvac.clean***
 with payload of:
