@@ -606,7 +606,9 @@ class TasmotaIrhvac(ClimateDevice, RestoreEntity):
                     self._enabled = True
 
                 # Update state attributes
-                self.async_update_state_attrs()
+                self._state_attrs.update(
+                    {attribute: getattr(self, '_' + attribute) for attribute in ATTRIBUTES_IRHVAC}
+                )
                 # Update HA UI and State
                 self.schedule_update_ha_state()
 
