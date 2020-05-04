@@ -1,0 +1,79 @@
+set_econo:
+  description: Sets Econo mode.
+  fields:
+    entity_id:
+      description: Name(s) of the entities to set
+      example: "climate.ac_living"
+    econo:
+      description: Sets Econo mode
+      example: "on"
+
+set_turbo:
+  description: Sets Turbo mode.
+  fields:
+    entity_id:
+      description: Name(s) of the entities to set
+      example: "climate.ac_living"
+    turbo:
+      description: Sets Turbo mode
+      example: "on"
+
+set_filters:
+  description: Sets Filters mode.
+  fields:
+    entity_id:
+      description: Name(s) of the entities to set
+      example: "climate.ac_living"
+    filters:
+      description: Sets Filters mode
+      example: "on"
+
+set_light:
+  description: Sets Light mode.
+  fields:
+    entity_id:
+      description: Name(s) of the entities to set
+      example: "climate.ac_living"
+    light:
+      description: Sets Light mode
+      example: "on"
+
+set_quiet:
+  description: Sets Quiet mode.
+  fields:
+    entity_id:
+      description: Name(s) of the entities to set
+      example: "climate.ac_living"
+    quiet:
+      description: Sets Quiet mode
+      example: "on"
+
+set_clean:
+  description: Sets Clean mode.
+  fields:
+    entity_id:
+      description: Name(s) of the entities to set
+      example: "climate.ac_living"
+    clean:
+      description: Sets Clean mode
+      example: "on"
+
+set_beep:
+  description: Sets Beep mode.
+  fields:
+    entity_id:
+      description: Name(s) of the entities to set
+      example: "climate.ac_living"
+    beep:
+      description: Sets Beep mode
+      example: "on"
+
+set_sleep:
+  description: Sets Sleep mode.
+  fields:
+    entity_id:
+      description: Name(s) of the entities to set
+      example: "climate.ac_living"
+    sleep:
+      description: Sets Sleep mode
+      example: "0"
