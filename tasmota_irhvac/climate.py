@@ -33,10 +33,8 @@ from homeassistant.components.climate.const import (
     SUPPORT_SWING_MODE,
     SUPPORT_PRESET_MODE,
     SUPPORT_TARGET_TEMPERATURE,
-    SWING_BOTH,
     SWING_HORIZONTAL,
-    SWING_OFF,
-    SWING_VERTICAL
+    SWING_VERTICAL,
 )
 
 from homeassistant.const import (
@@ -138,6 +136,21 @@ from .const import (
     SERVICE_CLEAN_MODE,
     SERVICE_BEEP_MODE,
     SERVICE_SLEEP_MODE,
+    SWING_VERTICAL_OFF,
+    SWING_VERTICAL_AUTO,
+    SWING_VERTICAL_LOWEST,
+    SWING_VERTICAL_LOW,
+    SWING_VERTICAL_MIDDLE,
+    SWING_VERTICAL_HIGH,
+    SWING_VERTICAL_HIGHEST,
+    SWING_HORIZONTAL_OFF,
+    SWING_HORIZONTAL_AUTO,
+    SWING_HORIZONTAL_LEFT_MAX,
+    SWING_HORIZONTAL_LEFT,
+    SWING_HORIZONTAL_MIDDLE,
+    SWING_HORIZONTAL_RIGHT,
+    SWING_HORIZONTAL_RIGHT_MAX,
+    SWING_HORIZONTAL_WIDE,
 )
 
 DEFAULT_MODES_LIST = [
@@ -148,7 +161,12 @@ DEFAULT_MODES_LIST = [
     HVAC_MODE_FAN_AUTO,
 ]
 
-DEFAULT_SWING_LIST = [SWING_OFF, SWING_VERTICAL]
+DEFAULT_VERTICAL_SWING_LIST = [SWING_VERTICAL_OFF, SWING_VERTICAL_AUTO]
+DEFAULT_HORIZONTAL_SWING_LIST = []
+DEFAULT_SWING_LIST = {
+    SWING_VERTICAL: DEFAULT_VERTICAL_SWING_LIST,
+    SWING_HORIZONTAL: DEFAULT_HORIZONTAL_SWING_LIST
+}
 DEFAULT_INITIAL_OPERATION_MODE = STATE_OFF
 
 _LOGGER = logging.getLogger(__name__)
@@ -210,10 +228,41 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
                 )
             ],
         ),
-        vol.Optional(CONF_SWING_LIST, default=DEFAULT_SWING_LIST): vol.All(
-            cv.ensure_list,
-            [vol.In([SWING_OFF, SWING_BOTH, SWING_VERTICAL, SWING_HORIZONTAL])],
-        ),
+        vol.Optional(CONF_SWING_LIST, default=DEFAULT_SWING_LIST): vol.All({
+            vol.Optional(SWING_VERTICAL, default=DEFAULT_VERTICAL_SWING_LIST): vol.All(
+                cv.ensure_list,
+                [
+                    vol.In(
+                        [
+                            SWING_VERTICAL_OFF,
+                            SWING_VERTICAL_AUTO,
+                            SWING_VERTICAL_LOWEST,
+                            SWING_VERTICAL_LOW,
+                            SWING_VERTICAL_MIDDLE,
+                            SWING_VERTICAL_HIGH,
+                            SWING_VERTICAL_HIGHEST,
+                        ]
+                    )
+                ],
+            ),
+            vol.Optional(SWING_HORIZONTAL, default=DEFAULT_HORIZONTAL_SWING_LIST): vol.All(
+                cv.ensure_list,
+                [
+                    vol.In(
+                        [
+                            SWING_HORIZONTAL_OFF,
+                            SWING_HORIZONTAL_AUTO,
+                            SWING_HORIZONTAL_LEFT_MAX,
+                            SWING_HORIZONTAL_LEFT,
+                            SWING_HORIZONTAL_MIDDLE,
+                            SWING_HORIZONTAL_RIGHT,
+                            SWING_HORIZONTAL_RIGHT_MAX,
+                            SWING_HORIZONTAL_WIDE,
+                        ]
+                    )
+                ],
+            ),
+        }),
         vol.Optional(CONF_QUIET, default=DEFAULT_CONF_QUIET): cv.string,
         vol.Optional(CONF_TURBO, default=DEFAULT_CONF_TURBO): cv.string,
         vol.Optional(CONF_ECONO, default=DEFAULT_CONF_ECONO): cv.string,
@@ -431,7 +480,9 @@ class TasmotaIrhvac(ClimateDevice, RestoreEntity):
         self._fan_list = fan_list
         self._fan_mode = fan_list[0]
         self._swing_list = swing_list
-        self._swing_mode = swing_list[0]
+        self._swing_vertical = next(iter(swing_list[SWING_VERTICAL]), SWING_VERTICAL_OFF)
+        self._swing_horizontal = next(iter(swing_list[SWING_HORIZONTAL]), SWING_HORIZONTAL_OFF)
+        self._swing_mode = next(iter(self.swing_modes), None)
         self._enabled = False
         self.power_mode = STATE_OFF
         if initial_operation_mode is not STATE_OFF:
@@ -553,34 +604,20 @@ class TasmotaIrhvac(ClimateDevice, RestoreEntity):
                 if "Sleep" in payload:
                     self._sleep = payload["Sleep"]
 
-                if (
-                    "SwingV" in payload
-                    and payload["SwingV"].lower() == STATE_AUTO
-                    and "SwingH" in payload
-                    and payload["SwingH"].lower() == STATE_AUTO
-                ):
-                    if SWING_BOTH in self._swing_list:
-                        self._swing_mode = SWING_BOTH
-                    elif SWING_VERTICAL in self._swing_list:
-                        self._swing_mode = SWING_VERTICAL
-                    elif SWING_HORIZONTAL in self._swing_list:
-                        self._swing_mode = SWING_HORIZONTAL
-                    else:
-                        self._swing_mode = SWING_OFF
-                elif (
-                    "SwingV" in payload
-                    and payload["SwingV"].lower() == STATE_AUTO
-                    and SWING_VERTICAL in self._swing_list
-                ):
-                    self._swing_mode = SWING_VERTICAL
-                elif (
-                    "SwingH" in payload
-                    and payload["SwingH"].lower() == STATE_AUTO
-                    and SWING_HORIZONTAL in self._swing_list
-                ):
-                    self._swing_mode = SWING_HORIZONTAL
-                else:
-                    self._swing_mode = SWING_OFF
+                if "SwingV" in payload:
+                    previous_swing = self._swing_vertical
+                    self._swing_vertical = payload["SwingV"].lower()
+                    if self._swing_vertical != previous_swing:
+                        if self._swing_list[SWING_VERTICAL] and self._swing_list[SWING_HORIZONTAL]:
+                            self._swing_vertical = "vertical " + self._swing_vertical
+                        self._swing_mode = self._swing_vertical
+                if "SwingH" in payload:
+                    previous_swing = self._swing_horizontal
+                    self._swing_horizontal = payload["SwingH"].lower()
+                    if self._swing_horizontal != previous_swing:
+                        if self._swing_list[SWING_VERTICAL] and self._swing_list[SWING_HORIZONTAL]:
+                            self._swing_horizontal = "horizontal " + self._swing_horizontal
+                        self._swing_mode = self._swing_horizontal
 
                 if "FanSpeed" in payload:
                     fan_mode = payload["FanSpeed"].lower()
@@ -741,7 +778,16 @@ class TasmotaIrhvac(ClimateDevice, RestoreEntity):
 
         Requires SUPPORT_SWING_MODE.
         """
-        return self._swing_list
+
+        swing_vertical = self._swing_list[SWING_VERTICAL]
+        swing_horizontal = self._swing_list[SWING_HORIZONTAL]
+
+        if swing_vertical and swing_horizontal:
+            swing_vertical = ["vertical " + s for s in swing_vertical]
+            swing_horizontal = ["horizontal " + s for s in swing_horizontal]
+        
+        swing_list = swing_vertical + swing_horizontal
+        return swing_list
 
     async def async_set_hvac_mode(self, hvac_mode):
         """Set hvac mode."""
@@ -790,13 +836,25 @@ class TasmotaIrhvac(ClimateDevice, RestoreEntity):
 
     async def async_set_swing_mode(self, swing_mode):
         """Set new target swing operation."""
-        if swing_mode not in self._swing_list:
+        if swing_mode not in self.swing_modes:
             _LOGGER.error(
                 "Invalid swing mode selected. Got '%s'. Allowed modes are:", swing_mode
             )
-            _LOGGER.error(self._swing_list)
+            _LOGGER.error(self.swing_modes)
             return
-        self._swing_mode = swing_mode
+        
+        self._swing_mode = swing_mode.lower()
+        
+        if SWING_VERTICAL in self._swing_mode: 
+            self._swing_vertical = swing_mode[len(SWING_VERTICAL)+1:]
+        elif SWING_HORIZONTAL in self._swing_mode:
+            self._swing_horizontal = self._swing_mode[len(SWING_HORIZONTAL)+1:]
+        else:
+            if self._swing_list[SWING_VERTICAL]:
+                self._swing_vertical = self._swing_mode
+            if self._swing_list[SWING_HORIZONTAL]:
+                self._swing_horizontal = self._swing_mode
+        
         self.power_mode = STATE_ON
         await self.async_send_cmd(False)
 
@@ -935,16 +993,6 @@ class TasmotaIrhvac(ClimateDevice, RestoreEntity):
             if self.fan_mode == HVAC_FAN_MAX:
                 fan_speed = HVAC_FAN_AUTO
 
-        # Set the swing mode - default off
-        swing_h = STATE_OFF
-        swing_v = STATE_OFF
-        if self.swing_mode == SWING_BOTH:
-            swing_h = STATE_AUTO
-            swing_v = STATE_AUTO
-        elif self.swing_mode == SWING_HORIZONTAL:
-            swing_h = STATE_AUTO
-        elif self.swing_mode == SWING_VERTICAL:
-            swing_v = STATE_AUTO
         # Populate the payload
         payload_data = {
             "Vendor": self._protocol,
@@ -954,8 +1002,8 @@ class TasmotaIrhvac(ClimateDevice, RestoreEntity):
             "Celsius": self._celsius,
             "Temp": self._target_temp,
             "FanSpeed": fan_speed,
-            "SwingV": swing_v,
-            "SwingH": swing_h,
+            "SwingV": self._swing_vertical,
+            "SwingH": self._swing_horizontal,
             "Quiet": self._quiet,
             "Turbo": self._turbo,
             "Econo": self._econo,

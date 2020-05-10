@@ -45,7 +45,7 @@ HVAC_MODE_DRY = "dry"
 # Only the fan is on, not fan and another mode like cool
 HVAC_MODE_FAN_ONLY = "fan_only"
 
-# Hvac moed list
+# Hvac modes list
 HVAC_MODES = [
     HVAC_MODE_OFF,
     HVAC_MODE_HEAT,
@@ -57,6 +57,23 @@ HVAC_MODES = [
     HVAC_MODE_AUTO_FAN,
     HVAC_MODE_FAN_AUTO,
 ]
+
+SWING_VERTICAL_OFF = "off"
+SWING_VERTICAL_AUTO = "auto"
+SWING_VERTICAL_LOWEST = "lowest"
+SWING_VERTICAL_LOW = "low"
+SWING_VERTICAL_MIDDLE = "middle"
+SWING_VERTICAL_HIGH = "high"
+SWING_VERTICAL_HIGHEST = "highest"
+
+SWING_HORIZONTAL_OFF = "off"
+SWING_HORIZONTAL_AUTO = "auto"
+SWING_HORIZONTAL_LEFT_MAX = "leftmax"
+SWING_HORIZONTAL_LEFT = "left"
+SWING_HORIZONTAL_MIDDLE = "middle"
+SWING_HORIZONTAL_RIGHT = "right"
+SWING_HORIZONTAL_RIGHT_MAX = "rightmax"
+SWING_HORIZONTAL_WIDE = "wide"
 
 # Platform specific config entry names
 CONF_PROTOCOL = "protocol"
