@@ -609,14 +609,14 @@ class TasmotaIrhvac(ClimateDevice, RestoreEntity):
                     self._swing_vertical = payload["SwingV"].lower()
                     if self._swing_vertical != previous_swing:
                         if self._swing_list[SWING_VERTICAL] and self._swing_list[SWING_HORIZONTAL]:
-                            self._swing_vertical = "vertical " + self._swing_vertical
+                            self._swing_vertical = "{} {}".format(SWING_VERTICAL, self._swing_vertical)
                         self._swing_mode = self._swing_vertical
                 if "SwingH" in payload:
                     previous_swing = self._swing_horizontal
                     self._swing_horizontal = payload["SwingH"].lower()
                     if self._swing_horizontal != previous_swing:
                         if self._swing_list[SWING_VERTICAL] and self._swing_list[SWING_HORIZONTAL]:
-                            self._swing_horizontal = "horizontal " + self._swing_horizontal
+                            self._swing_horizontal = "{} {}".format(SWING_HORIZONTAL, self._swing_horizontal)
                         self._swing_mode = self._swing_horizontal
 
                 if "FanSpeed" in payload:
@@ -783,8 +783,8 @@ class TasmotaIrhvac(ClimateDevice, RestoreEntity):
         swing_horizontal = self._swing_list[SWING_HORIZONTAL]
 
         if swing_vertical and swing_horizontal:
-            swing_vertical = ["vertical " + s for s in swing_vertical]
-            swing_horizontal = ["horizontal " + s for s in swing_horizontal]
+            swing_vertical = ["{} {}".format(SWING_VERTICAL, s) for s in swing_vertical]
+            swing_horizontal = ["{} {}".format(SWING_HORIZONTAL, s) for s in swing_horizontal]
         
         swing_list = swing_vertical + swing_horizontal
         return swing_list
