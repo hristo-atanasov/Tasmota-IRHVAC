@@ -58,6 +58,7 @@ HVAC_MODES = [
     HVAC_MODE_FAN_AUTO,
 ]
 
+# Vertical swing modes
 SWING_VERTICAL_OFF = "off"
 SWING_VERTICAL_AUTO = "auto"
 SWING_VERTICAL_LOWEST = "lowest"
@@ -66,6 +67,7 @@ SWING_VERTICAL_MIDDLE = "middle"
 SWING_VERTICAL_HIGH = "high"
 SWING_VERTICAL_HIGHEST = "highest"
 
+# Horizontal swing modes
 SWING_HORIZONTAL_OFF = "off"
 SWING_HORIZONTAL_AUTO = "auto"
 SWING_HORIZONTAL_LEFT_MAX = "leftmax"
