@@ -39,10 +39,20 @@ climate:
       - "max"
       #- auto
     supported_swing_list:
-      - "off"
-      - "vertical" #up to down
-      # - horizontal # Left to right
-      # - both
+      vertical: # defaults to "off" and "auto"
+        - "auto"
+        - "lowest"
+        - "low"
+        - "middle"
+        - "high"
+        - "highest"
+      # horizontal # defaults to an empty list
+        # - "auto"
+        # - "leftmax"
+        # - "left"
+        # - "middle"
+        # - "right"
+        # - "rightmax"
     default_quiet_mode: "Off" #optional - default "Off" string value
     default_turbo_mode: "Off" #optional - default "Off" string value
     default_econo_mode: "Off" #optional - default "Off" string value
