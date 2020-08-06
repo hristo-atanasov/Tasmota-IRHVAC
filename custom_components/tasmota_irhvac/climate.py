@@ -759,6 +759,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         # Ensure we update the current operation after changing the mode
         await self.async_send_cmd(False)
 
+        if hvac_mode not in self._hvac_list or hvac_mode == HVAC_MODE_OFF:
+            self._hvac_mode = STATE_OFF
+
     async def async_turn_on(self):
         """Turn thermostat on."""
         self.power_mode = STATE_ON
@@ -768,6 +771,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         """Turn thermostat off."""
         self.power_mode = STATE_OFF
         await self.async_send_cmd(False)
+        self._hvac_mode = STATE_OFF
 
     async def async_set_temperature(self, **kwargs):
         """Set new target temperature."""
