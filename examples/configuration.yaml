@@ -1,8 +1,13 @@
 climate:
   - platform: tasmota_irhvac
-    name: "Daewoo IRHvac"
-    command_topic: "cmnd/kitchenMultisensor/irhvac"
-    state_topic: "tele/kitchenMultisensor/RESULT"
+    name: "Some Name Here"
+    command_topic: "cmnd/your_tasmota_device/irhvac"
+    # Pick one of the following:
+    # State is updated when the tasmota device receives an IR signal (includes own transmission and original remote)
+    # useful when a normal remote is in use alongside the tasmota device, may be less reliable than the second option.
+    state_topic: "tele/your_tasmota_device/RESULT"
+    # State is updated when the tasmota device completes IR transmissionm, should be pretty reliable.
+    state_topic: "stat/your_tasmota_device/RESULT"
     temperature_sensor: sensor.kitchen_temperature
     protocol: "ELECTRA_AC"
     min_temp: 16 #optional - default 16 int value
@@ -17,9 +22,9 @@ climate:
       - "dry"
       - "fan_only"
       - "auto"
-      - "off" #Turns the AC off - Should be quoted
-      # Some devices have "auto" and "fan_only" chaned
-      # If following two lines are uncommented, "auto" and "fan" shoud be commented
+      - "off" #Turns the AC off - Should be in quotes
+      # Some devices have "auto" and "fan_only" switched
+      # If the following two lines are uncommented, "auto" and "fan" shoud be commented out
       #- auto_fan_only #if remote shows fan but tasmota says auto
       #- fan_only_auto #if remote shows auto but tasmota says fan
     supported_fan_speeds:
