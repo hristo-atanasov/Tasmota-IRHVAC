@@ -352,9 +352,9 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             )
     uuidstr = uuid.uuid4().hex
     hass.data[DATA_KEY][uuidstr] = tasmotaIrhvac
-    
+
     async_add_entities([tasmotaIrhvac])
-    
+
     async def async_service_handler(service):
         """Map services to methods on TasmotaIrhvac."""
         method = SERVICE_TO_METHOD.get(service.service)
@@ -602,7 +602,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                     else:
                         self._fan_mode = fan_mode
                     _LOGGER.debug(self._fan_mode)
-                    
+
                 # Set default state to off
                 if self.power_mode == STATE_OFF:
                     self._enabled = False
@@ -750,7 +750,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
     async def async_set_hvac_mode(self, hvac_mode):
         """Set hvac mode."""
         if hvac_mode not in self._hvac_list or hvac_mode == HVAC_MODE_OFF:
-            self._hvac_mode = HVAC_MODE_OFF
             self._enabled = False
             self.power_mode = STATE_OFF
         else:
@@ -767,7 +766,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
 
     async def async_turn_off(self):
         """Turn thermostat off."""
-        self._hvac_mode = STATE_OFF
         self.power_mode = STATE_OFF
         await self.async_send_cmd(False)
 
