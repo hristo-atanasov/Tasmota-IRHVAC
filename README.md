@@ -15,10 +15,10 @@ After configuration open Tasmota console, point your AC remote to the IR receive
 If everything in the above steps is made right, you should see a line like this (example with Fujitsu Air Conditioner):
 
 ```javacript
-{'IrReceived': {'Protocol': 'FUJITSU_AC', 'Bits': 128, 'Data': '0x0x1463001010FE09304013003008002025', 'Repeat': 0, 'IRHVAC': {'Vendor': 'FUJITSU_AC', 'Model': 1, 'Power': 'On', 'Mode': 'fan_only', 'Celsius': 'On', 'Temp': 20, 'FanSpeed': 'Auto', 'SwingV': 'Off', 'SwingH': 'Off', 'Quiet': 'Off', 'Turbo': 'Off', 'Econo': 'Off', 'Light': 'Off', 'Filter': 'Off', 'Clean': 'Off', 'Beep': 'Off', 'Sleep': -1}}}
+{'IrReceived': {'Vendor': 'FUJITSU_AC', 'Bits': 128, 'Data': '0x0x1463001010FE09304013003008002025', 'Repeat': 0, 'IRHVAC': {'Vendor': 'FUJITSU_AC', 'Model': 1, 'Power': 'On', 'Mode': 'fan_only', 'Celsius': 'On', 'Temp': 20, 'FanSpeed': 'Auto', 'SwingV': 'Off', 'SwingH': 'Off', 'Quiet': 'Off', 'Turbo': 'Off', 'Econo': 'Off', 'Light': 'Off', 'Filter': 'Off', 'Clean': 'Off', 'Beep': 'Off', 'Sleep': -1}}}
 ```
 
-If protocol is no *‘Unknown’* and you see the *‘IRHVAC’* key, containing information, you can be sure that it will work for you.
+If vendor is not *‘Unknown’* and you see the *‘IRHVAC’* key, containing information, you can be sure that it will work for you.
 
 Next step is to download the files from this repo, get the folder named *"tasmota_irhvac"* and place it in your *"custom_components"* folder.
 Reastart Home Assistant!
@@ -49,7 +49,7 @@ As an addition you can add these 2 scripts from *scripts.yaml* in your *scripts.
 ir_code:
   sequence:
   - data_template:
-      payload: '{"Protocol":"{{ protocol }}","Bits": {{ bits }},"Data": 0x{{ data }}}'
+      payload: '{"Vendor":"{{ vendor }}","Bits": {{ bits }},"Data": 0x{{ data }}}'
       topic: 'cmnd/{{ room }}Multisensor/irsend'
     service: mqtt.publish
 ir_raw:
@@ -60,7 +60,7 @@ ir_raw:
     service: mqtt.publish
 ```
 
-You can then use these scripts, for the exmple, in a *button card*. Create a new card, put inside it the content of the *card_configuration.yaml*, change *bits:*, *data:*, *protocol:* and *room:* with your desired values and test it. :)
+You can then use these scripts, for the exmple, in a *button card*. Create a new card, put inside it the content of the *card_configuration.yaml*, change *bits:*, *data:*, *vendor:* and *room:* with your desired values and test it. :)
 
 ```yaml
 cards:
@@ -74,7 +74,7 @@ cards:
           data:
             bits: 12
             data: A80
-            protocol: SONY
+            vendor: SONY
             room: kitchen
           domain: script
         style:
@@ -91,7 +91,7 @@ cards:
           data:
             bits: 12
             data: E85
-            protocol: SONY
+            vendor: SONY
             room: kitchen
           domain: script
         style:

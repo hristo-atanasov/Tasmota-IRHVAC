@@ -4,7 +4,7 @@ climate:
     command_topic: "cmnd/kitchenMultisensor/irhvac"
     state_topic: "tele/kitchenMultisensor/RESULT"
     temperature_sensor: sensor.kitchen_temperature
-    protocol: "ELECTRA_AC"
+    vendor: "ELECTRA_AC"
     min_temp: 16 #optional - default 16 int value
     max_temp: 32 #optional - default 32 int value
     target_temp: 26 #optional - default 26 int value

@@ -88,7 +88,7 @@ from .const import (
     HVAC_MODE_DRY,
     HVAC_MODE_FAN_ONLY,
     HVAC_MODES,
-    CONF_PROTOCOL,
+    CONF_VENDOR,
     CONF_COMMAND_TOPIC,
     CONF_STATE_TOPIC,
     CONF_TEMP_SENSOR,
@@ -116,7 +116,7 @@ from .const import (
     DEFAULT_NAME,
     DEFAULT_STATE_TOPIC,
     DEFAULT_COMMAND_TOPIC,
-    DEFAULT_PROTOCOL,
+    DEFAULT_VENDOR,
     DEFAULT_TARGET_TEMP,
     DEFAULT_MIN_TEMP,
     DEFAULT_MAX_TEMP,
@@ -167,7 +167,7 @@ SUPPORT_FLAGS = (
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Required(CONF_PROTOCOL, default=DEFAULT_PROTOCOL): cv.string,
+        vol.Required(CONF_VENDOR, default=DEFAULT_VENDOR): cv.string,
         vol.Required(
             CONF_COMMAND_TOPIC, default=DEFAULT_COMMAND_TOPIC
         ): mqtt.valid_publish_topic,
@@ -297,7 +297,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     """Set up the generic thermostat platform."""
     name = config.get(CONF_NAME)
     topic = config.get(CONF_COMMAND_TOPIC)
-    protocol = config.get(CONF_PROTOCOL)
+    vendor = config.get(CONF_VENDOR)
     sensor_entity_id = config.get(CONF_TEMP_SENSOR)
     state_topic = config[CONF_STATE_TOPIC]
     min_temp = config[CONF_MIN_TEMP]
@@ -326,7 +326,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     tasmotaIrhvac = TasmotaIrhvac(
                 hass,
                 topic,
-                protocol,
+                vendor,
                 name,
                 sensor_entity_id,
                 state_topic,
@@ -352,9 +352,9 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             )
     uuidstr = uuid.uuid4().hex
     hass.data[DATA_KEY][uuidstr] = tasmotaIrhvac
-    
+
     async_add_entities([tasmotaIrhvac])
-    
+
     async def async_service_handler(service):
         """Map services to methods on TasmotaIrhvac."""
         method = SERVICE_TO_METHOD.get(service.service)
@@ -397,7 +397,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self,
         hass,
         topic,
-        protocol,
+        vendor,
         name,
         sensor_entity_id,
         state_topic,
@@ -424,7 +424,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         """Initialize the thermostat."""
         self.topic = topic
         self.hass = hass
-        self._protocol = protocol
+        self._vendor = vendor
         self._name = name
         self.sensor_entity_id = sensor_entity_id
         self.state_topic = state_topic
@@ -602,7 +602,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                     else:
                         self._fan_mode = fan_mode
                     _LOGGER.debug(self._fan_mode)
-                    
+
                 # Set default state to off
                 if self.power_mode == STATE_OFF:
                     self._enabled = False
@@ -951,7 +951,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             swing_v = STATE_AUTO
         # Populate the payload
         payload_data = {
-            "Vendor": self._protocol,
+            "Vendor": self._vendor,
             "Model": self._model,
             "Power": self.power_mode,
             "Mode": curr_operation,

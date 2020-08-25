@@ -1,7 +1,7 @@
 ir_code:
   sequence:
   - data_template:
-      payload: '{"Protocol":"{{ protocol }}","Bits": {{ bits }},"Data": 0x{{ data }}}'
+      payload: '{"Vendor":"{{ vendor }}","Bits": {{ bits }},"Data": 0x{{ data }}}'
       topic: 'cmnd/{{ room }}Multisensor/irsend'
     service: mqtt.publish
 ir_raw:
