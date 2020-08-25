@@ -9,7 +9,7 @@ cards:
           data:
             bits: 12
             data: A80
-            vendor: SONY
+            protocol: SONY
             room: kitchen
           domain: script
         style:
@@ -26,7 +26,7 @@ cards:
           data:
             bits: 12
             data: E85
-            vendor: SONY
+            protocol: SONY
             room: kitchen
           domain: script
         style:
