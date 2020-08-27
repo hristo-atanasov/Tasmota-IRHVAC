@@ -167,7 +167,8 @@ SUPPORT_FLAGS = (
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Required(CONF_VENDOR, default=DEFAULT_VENDOR): cv.string,
+        vol.Exclusive(CONF_VENDOR, CONF_EXCLUSIVE_GROUP_VENDOR): cv.string,
+        vol.Exclusive(CONF_PROTOCOL, CONF_EXCLUSIVE_GROUP_VENDOR): cv.string,
         vol.Required(
             CONF_COMMAND_TOPIC, default=DEFAULT_COMMAND_TOPIC
         ): mqtt.valid_publish_topic,
@@ -298,6 +299,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     name = config.get(CONF_NAME)
     topic = config.get(CONF_COMMAND_TOPIC)
     vendor = config.get(CONF_VENDOR)
+    protocol = config.get(CONF_PROTOCOL)
     sensor_entity_id = config.get(CONF_TEMP_SENSOR)
     state_topic = config[CONF_STATE_TOPIC]
     min_temp = config[CONF_MIN_TEMP]
@@ -322,6 +324,13 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     if DATA_KEY not in hass.data:
         hass.data[DATA_KEY] = {}
+
+    if vendor is None:
+        if protocol is None:
+            _LOGGER.error("Neither vendor nor protocol provided!")
+            return
+        
+        vendor = protocol
 
     tasmotaIrhvac = TasmotaIrhvac(
                 hass,
