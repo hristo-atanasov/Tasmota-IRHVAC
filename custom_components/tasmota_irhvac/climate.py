@@ -88,7 +88,9 @@ from .const import (
     HVAC_MODE_DRY,
     HVAC_MODE_FAN_ONLY,
     HVAC_MODES,
+    CONF_EXCLUSIVE_GROUP_VENDOR,
     CONF_VENDOR,
+    CONF_PROTOCOL,
     CONF_COMMAND_TOPIC,
     CONF_STATE_TOPIC,
     CONF_TEMP_SENSOR,
@@ -116,7 +118,6 @@ from .const import (
     DEFAULT_NAME,
     DEFAULT_STATE_TOPIC,
     DEFAULT_COMMAND_TOPIC,
-    DEFAULT_VENDOR,
     DEFAULT_TARGET_TEMP,
     DEFAULT_MIN_TEMP,
     DEFAULT_MAX_TEMP,
@@ -327,7 +328,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     if vendor is None:
         if protocol is None:
-            _LOGGER.error("Neither vendor nor protocol provided!")
+            _LOGGER.error('Neither vendor nor protocol provided for "%s"!', name)
             return
         
         vendor = protocol
