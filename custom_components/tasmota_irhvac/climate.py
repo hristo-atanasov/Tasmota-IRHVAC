@@ -519,18 +519,19 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             """Handle new MQTT state messages."""
             json_payload = json.loads(msg.payload)
             _LOGGER.debug(json_payload)
-            if "IrReceived" not in json_payload:
-                return
-            if "IRHVAC" not in json_payload["IrReceived"]:
+
+            # If listening to `tele`, result looks like: {"IrReceived":{"Protocol":"XXX", ... ,"IRHVAC":{ ... }}}
+            # we want to extract the data.
+            if "IrReceived" in json_payload:
+                json_payload = json_payload["IrReceived"]
+
+            # By now the payload must include an `IRHVAC` field.
+            if "IRHVAC" not in json_payload:
                 return
 
-            payload = json_payload["IrReceived"]["IRHVAC"]
-            _LOGGER.debug(payload)
-            if (
-                payload["Vendor"] == self._protocol
-                and str(payload["Model"]) == self._model
-            ):
-                _LOGGER.debug("we have a match")
+            payload = json_payload["IRHVAC"]
+
+            if payload["Vendor"].lower() == self._protocol:
                 # All values in the payload are Optional
                 if "Power" in payload:
                     self.power_mode = payload["Power"].lower()
@@ -930,9 +931,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
 
     def send_ir(self):
         """Send the payload to tasmota mqtt topic."""
-        curr_operation = self._hvac_mode
         fan_speed = self.fan_mode
-        # tweek for some ELECTRA_AC devices
+        # tweak for some ELECTRA_AC devices
         if HVAC_FAN_MAX_HIGH in self._fan_list and HVAC_FAN_AUTO_MAX in self._fan_list:
             if self.fan_mode == FAN_HIGH:
                 fan_speed = HVAC_FAN_MAX
@@ -954,7 +954,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             "Vendor": self._protocol,
             "Model": self._model,
             "Power": self.power_mode,
-            "Mode": curr_operation,
+            "Mode": self._hvac_mode,
             "Celsius": self._celsius,
             "Temp": self._target_temp,
             "FanSpeed": fan_speed,
