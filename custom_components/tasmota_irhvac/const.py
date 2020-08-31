@@ -59,7 +59,9 @@ HVAC_MODES = [
 ]
 
 # Platform specific config entry names
-CONF_PROTOCOL = "protocol"
+CONF_EXCLUSIVE_GROUP_VENDOR = "exclusive_group_vendor"
+CONF_VENDOR = "vendor"
+CONF_PROTOCOL = "protocol" # Soon to be deprecated
 CONF_COMMAND_TOPIC = "command_topic"
 CONF_STATE_TOPIC = "state_topic"
 CONF_TEMP_SENSOR = "temperature_sensor"
@@ -87,7 +89,6 @@ CONF_SLEEP = "default_sleep_mode"
 DEFAULT_NAME = "IR AirConditioner"
 DEFAULT_STATE_TOPIC = "state"
 DEFAULT_COMMAND_TOPIC = "topic"
-DEFAULT_PROTOCOL = "ELECTRA_AC"
 DEFAULT_TARGET_TEMP = 26
 DEFAULT_MIN_TEMP = 16
 DEFAULT_MAX_TEMP = 32
