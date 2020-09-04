@@ -113,6 +113,7 @@ from .const import (
     CONF_CLEAN,
     CONF_BEEP,
     CONF_SLEEP,
+    CONF_POWER_TOGGLE,
     DATA_KEY,
     DOMAIN,
     DEFAULT_NAME,
@@ -134,6 +135,7 @@ from .const import (
     DEFAULT_CONF_CLEAN,
     DEFAULT_CONF_BEEP,
     DEFAULT_CONF_SLEEP,
+    DEFAULT_CONF_POWER_TOGGLE,
     ON_OFF_LIST,
     SERVICE_ECONO_MODE,
     SERVICE_TURBO_MODE,
@@ -231,6 +233,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_CLEAN, default=DEFAULT_CONF_CLEAN): cv.string,
         vol.Optional(CONF_BEEP, default=DEFAULT_CONF_BEEP): cv.string,
         vol.Optional(CONF_SLEEP, default=DEFAULT_CONF_SLEEP): cv.string,
+        vol.Optional(CONF_POWER_TOGGLE, default=DEFAULT_CONF_POWER_TOGGLE): bool
     }
 )
 
@@ -325,6 +328,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     clean = config[CONF_CLEAN]
     beep = config[CONF_BEEP]
     sleep = config[CONF_SLEEP]
+    power_toggle = config[CONF_POWER_TOGGLE]
 
     if DATA_KEY not in hass.data:
         hass.data[DATA_KEY] = {}
@@ -363,6 +367,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         clean,
         beep,
         sleep,
+        power_toggle
     )
     uuidstr = uuid.uuid4().hex
     hass.data[DATA_KEY][uuidstr] = tasmotaIrhvac
@@ -434,6 +439,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         clean,
         beep,
         sleep,
+        power_toggle
     ):
         """Initialize the thermostat."""
         self.topic = topic
@@ -452,8 +458,11 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._swing_mode = swing_list[0]
         self._enabled = False
         self.power_mode = STATE_OFF
+        self._power_mode_previous = STATE_OFF
+        self._power_toggle = power_toggle
         if initial_operation_mode is not STATE_OFF:
             self.power_mode = STATE_ON
+            self._power_mode_previous = STATE_ON
             self._enabled = True
         self._active = False
         self._cur_temp = None
@@ -551,7 +560,14 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             if payload["Vendor"].lower() == self._vendor:
                 # All values in the payload are Optional
                 if "Power" in payload:
-                    self.power_mode = payload["Power"].lower()
+                    # Power-toggle mode:
+                    #   * If the command state is `on`  - toggles the power state
+                    #   * If the command state is `off` - doesn't toggle power state but changes other configuration values
+                    if self._power_toggle:
+                        # Currently unsupported
+                        pass
+                    else:
+                        self.power_mode = payload["Power"].lower()
                 if "Mode" in payload:
                     self._hvac_mode = payload["Mode"].lower()
                 if "Temp" in payload:
@@ -958,6 +974,19 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             if self.fan_mode == HVAC_FAN_MAX:
                 fan_speed = HVAC_FAN_AUTO
 
+        if self._power_toggle:
+            if self.power_mode != self._power_mode_previous:
+                # Power mode changed in toggle-mode: send the "on" command
+                power_mode = STATE_ON
+            else:
+                # Power mode hasn't changed in toggle-mode: send the "off" command
+                power_mode = STATE_OFF
+        else:
+            # In non-toggle mode just send whatever the requested mode is
+            power_mode = self.power_mode
+
+        self._power_mode_previous = self.power_mode
+
         # Set the swing mode - default off
         swing_h = STATE_OFF
         swing_v = STATE_OFF
@@ -972,7 +1001,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         payload_data = {
             "Vendor": self._vendor,
             "Model": self._model,
-            "Power": self.power_mode,
+            "Power": power_mode,
             "Mode": self._hvac_mode,
             "Celsius": self._celsius,
             "Temp": self._target_temp,
