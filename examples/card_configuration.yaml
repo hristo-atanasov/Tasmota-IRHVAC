@@ -2,7 +2,7 @@ cards:
   - cards:
       - action: service
         color: white
-        icon: 'mdi:power'
+        icon: "mdi:power"
         name: Turn On Audio HEX
         service:
           action: ir_code
@@ -15,11 +15,11 @@ cards:
         style:
           - color: white
           - background: green
-          - '--disabled-text-color': white
-        type: 'custom:button-card'
+          - "--disabled-text-color": white
+        type: "custom:button-card"
       - action: service
         color: white
-        icon: 'mdi:power'
+        icon: "mdi:power"
         name: Turn Off Audio HEX
         service:
           action: ir_code
@@ -32,11 +32,11 @@ cards:
         style:
           - color: white
           - background: red
-          - '--disabled-text-color': white
-        type: 'custom:button-card'
+          - "--disabled-text-color": white
+        type: "custom:button-card"
       - action: service
         color: white
-        icon: 'mdi:power'
+        icon: "mdi:power"
         name: Test AC Raw
         service:
           action: ir_raw
@@ -70,7 +70,7 @@ cards:
         style:
           - color: white
           - background: blue
-          - '--disabled-text-color': white
-        type: 'custom:button-card'
+          - "--disabled-text-color": white
+        type: "custom:button-card"
     type: vertical-stack
 type: vertical-stack
