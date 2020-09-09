@@ -541,7 +541,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
 
             payload = json_payload["IRHVAC"]
 
-            if payload["Vendor"].lower() == self._protocol:
+            if payload["Vendor"].lower() == self._vendor:
                 # All values in the payload are Optional
                 if "Power" in payload:
                     self.power_mode = payload["Power"].lower()
