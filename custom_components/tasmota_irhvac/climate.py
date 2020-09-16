@@ -548,7 +548,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                 if "Mode" in payload:
                     self._hvac_mode = payload["Mode"].lower()
                 if "Temp" in payload:
-                    self._target_temp = payload["Temp"]
+                    if payload["Temp"] > 0:
+                        self._target_temp = payload["Temp"]
                 if "Celsius" in payload:
                     self._celsius = payload["Celsius"].lower()
                 if "Quiet" in payload:
