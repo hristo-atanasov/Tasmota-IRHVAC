@@ -61,7 +61,7 @@ HVAC_MODES = [
 # Platform specific config entry names
 CONF_EXCLUSIVE_GROUP_VENDOR = "exclusive_group_vendor"
 CONF_VENDOR = "vendor"
-CONF_PROTOCOL = "protocol" # Soon to be deprecated
+CONF_PROTOCOL = "protocol"  # Soon to be deprecated
 CONF_COMMAND_TOPIC = "command_topic"
 CONF_STATE_TOPIC = "state_topic"
 CONF_TEMP_SENSOR = "temperature_sensor"
@@ -94,7 +94,8 @@ DEFAULT_MIN_TEMP = 16
 DEFAULT_MAX_TEMP = 32
 DEFAULT_PRECISION = 1
 DEFAULT_AWAY_TEMP = 24
-DEFAULT_FAN_LIST = [HVAC_FAN_AUTO_MAX, HVAC_FAN_MAX_HIGH, HVAC_FAN_MEDIUM, HVAC_FAN_MIN]
+DEFAULT_FAN_LIST = [HVAC_FAN_AUTO_MAX,
+                    HVAC_FAN_MAX_HIGH, HVAC_FAN_MEDIUM, HVAC_FAN_MIN]
 DEFAULT_CONF_QUIET = "off"
 DEFAULT_CONF_TURBO = "off"
 DEFAULT_CONF_ECONO = "off"

@@ -183,7 +183,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(
             CONF_INITIAL_OPERATION_MODE, default=DEFAULT_INITIAL_OPERATION_MODE
         ): vol.In(
-            [STATE_HEAT, STATE_COOL, STATE_AUTO, STATE_DRY, STATE_FAN_ONLY, STATE_OFF]
+            [STATE_HEAT, STATE_COOL, STATE_AUTO,
+                STATE_DRY, STATE_FAN_ONLY, STATE_OFF]
         ),
         vol.Optional(CONF_AWAY_TEMP, default=DEFAULT_AWAY_TEMP): vol.Coerce(float),
         vol.Optional(CONF_PRECISION, default=DEFAULT_PRECISION): vol.In(
@@ -233,7 +234,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
-IRHVAC_SERVICE_SCHEMA = vol.Schema({vol.Required(ATTR_ENTITY_ID): cv.entity_ids})
+IRHVAC_SERVICE_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_ENTITY_ID): cv.entity_ids})
 
 SERVICE_SCHEMA_ECONO_MODE = IRHVAC_SERVICE_SCHEMA.extend(
     {vol.Required(ATTR_ECONO): vol.In(ON_OFF_LIST)}
@@ -295,6 +297,7 @@ SERVICE_TO_METHOD = {
     },
 }
 
+
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the generic thermostat platform."""
     name = config.get(CONF_NAME)
@@ -328,38 +331,39 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     if vendor is None:
         if protocol is None:
-            _LOGGER.error('Neither vendor nor protocol provided for "%s"!', name)
+            _LOGGER.error(
+                'Neither vendor nor protocol provided for "%s"!', name)
             return
-        
+
         vendor = protocol
 
     tasmotaIrhvac = TasmotaIrhvac(
-                hass,
-                topic,
-                vendor,
-                name,
-                sensor_entity_id,
-                state_topic,
-                min_temp,
-                max_temp,
-                target_temp,
-                initial_operation_mode,
-                away_temp,
-                precision,
-                modes_list,
-                fan_list,
-                swing_list,
-                quiet,
-                turbo,
-                econo,
-                model,
-                celsius,
-                light,
-                filters,
-                clean,
-                beep,
-                sleep,
-            )
+        hass,
+        topic,
+        vendor,
+        name,
+        sensor_entity_id,
+        state_topic,
+        min_temp,
+        max_temp,
+        target_temp,
+        initial_operation_mode,
+        away_temp,
+        precision,
+        modes_list,
+        fan_list,
+        swing_list,
+        quiet,
+        turbo,
+        econo,
+        model,
+        celsius,
+        light,
+        filters,
+        clean,
+        beep,
+        sleep,
+    )
     uuidstr = uuid.uuid4().hex
     hass.data[DATA_KEY][uuidstr] = tasmotaIrhvac
 
@@ -478,7 +482,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._sub_state = None
         self._state_attrs = {}
         self._state_attrs.update(
-            {attribute: getattr(self, '_' + attribute) for attribute in ATTRIBUTES_IRHVAC}
+            {attribute: getattr(self, '_' + attribute)
+             for attribute in ATTRIBUTES_IRHVAC}
         )
 
     async def async_added_to_hass(self):
@@ -497,14 +502,16 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             if sensor_state and sensor_state.state != STATE_UNKNOWN:
                 self._async_update_temp(sensor_state)
 
-        self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, _async_startup)
+        self.hass.bus.async_listen_once(
+            EVENT_HOMEASSISTANT_START, _async_startup)
 
         # Check If we have an old state
         old_state = await self.async_get_last_state()
         if old_state is not None:
             # If we have no initial temperature, restore
             if old_state.attributes.get(ATTR_TEMPERATURE) is not None:
-                self._target_temp = float(old_state.attributes[ATTR_TEMPERATURE])
+                self._target_temp = float(
+                    old_state.attributes[ATTR_TEMPERATURE])
             if old_state.attributes.get(ATTR_PRESET_MODE) == PRESET_AWAY:
                 self._is_away = True
             if not self._hvac_mode and old_state.state:
@@ -541,7 +548,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
 
             payload = json_payload["IRHVAC"]
 
-            if payload["Vendor"].lower() == self._protocol:
+            if payload["Vendor"].lower() == self._vendor:
                 # All values in the payload are Optional
                 if "Power" in payload:
                     self.power_mode = payload["Power"].lower()
@@ -622,7 +629,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
 
                 # Update state attributes
                 self._state_attrs.update(
-                    {attribute: getattr(self, '_' + attribute) for attribute in ATTRIBUTES_IRHVAC}
+                    {attribute: getattr(self, '_' + attribute)
+                     for attribute in ATTRIBUTES_IRHVAC}
                 )
                 # Update HA UI and State
                 self.schedule_update_ha_state()
@@ -869,7 +877,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._sleep = sleep.lower()
         await self.async_send_cmd(True)
 
-    async def async_send_cmd(self, attr_update = False):
+    async def async_send_cmd(self, attr_update=False):
         if attr_update:
             await self.async_update_state_attrs()
         await self.hass.async_add_executor_job(self.send_ir)
@@ -877,7 +885,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
 
     async def async_update_state_attrs(self):
         self._state_attrs.update(
-            {attribute: getattr(self, '_' + attribute) for attribute in ATTRIBUTES_IRHVAC}
+            {attribute: getattr(self, '_' + attribute)
+             for attribute in ATTRIBUTES_IRHVAC}
         )
 
     @property
@@ -978,7 +987,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             "Clean": self._clean,
             "Beep": self._beep,
             "Sleep": self._sleep
-            }
+        }
         payload = (json.dumps(payload_data))
         # Publish mqtt message
         mqtt.async_publish(self.hass, self.topic, payload)
