@@ -233,7 +233,10 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_BEEP, default=DEFAULT_CONF_BEEP): cv.string,
         vol.Optional(CONF_SLEEP, default=DEFAULT_CONF_SLEEP): cv.string,
     }
-).extend(mqtt.MQTT_AVAILABILITY_SCHEMA.schema)
+)
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(mqtt.MQTT_AVAILABILITY_SCHEMA.schema)
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(mqtt.MQTT_BASE_PLATFORM_SCHEMA.schema)
+
 
 IRHVAC_SERVICE_SCHEMA = vol.Schema(
     {vol.Required(ATTR_ENTITY_ID): cv.entity_ids})
@@ -340,6 +343,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     tasmotaIrhvac = TasmotaIrhvac(
         hass,
+        config,
         topic,
         vendor,
         name,
@@ -411,6 +415,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     def __init__(
         self,
         hass,
+        config,
         topic,
         vendor,
         name,
