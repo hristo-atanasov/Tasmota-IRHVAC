@@ -2,6 +2,10 @@ climate:
   - platform: tasmota_irhvac
     name: "Some Name Here"
     command_topic: "cmnd/your_tasmota_device/irhvac"
+    #Use the following config options to configure the availability 
+    availability_topic: "tele/your_tasmota_device/LWT"
+    payload_available: "Online"
+    payload_not_available: "Offline"
     # Pick one of the following:
     # State is updated when the tasmota device receives an IR signal (includes own transmission and original remote)
     # useful when a normal remote is in use alongside the tasmota device, may be less reliable than the second option.
