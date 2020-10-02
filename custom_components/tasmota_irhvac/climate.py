@@ -7,6 +7,7 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 
 from homeassistant.components import mqtt
+from homeassistant.components.mqtt import MqttAvailability
 from homeassistant.components.climate import PLATFORM_SCHEMA
 try:
     from homeassistant.components.climate import ClimateEntity
@@ -232,7 +233,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_BEEP, default=DEFAULT_CONF_BEEP): cv.string,
         vol.Optional(CONF_SLEEP, default=DEFAULT_CONF_SLEEP): cv.string,
     }
-)
+).extend(mqtt.MQTT_AVAILABILITY_SCHEMA.schema)
 
 IRHVAC_SERVICE_SCHEMA = vol.Schema(
     {vol.Required(ATTR_ENTITY_ID): cv.entity_ids})
@@ -404,7 +405,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         )
 
 
-class TasmotaIrhvac(ClimateEntity, RestoreEntity):
+class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     """Representation of a Generic Thermostat device."""
 
     def __init__(
@@ -481,10 +482,12 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._sleep = sleep.lower()
         self._sub_state = None
         self._state_attrs = {}
+        self._available = False
         self._state_attrs.update(
             {attribute: getattr(self, '_' + attribute)
              for attribute in ATTRIBUTES_IRHVAC}
         )
+        MqttAvailability.__init__(self, config)
 
     async def async_added_to_hass(self):
         """Run when entity about to be added."""
@@ -636,6 +639,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                 # Update HA UI and State
                 self.schedule_update_ha_state()
 
+
         self._sub_state = await mqtt.subscription.async_subscribe_topics(
             self.hass,
             self._sub_state,
@@ -653,6 +657,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._sub_state = await mqtt.subscription.async_unsubscribe_topics(
             self.hass, self._sub_state
         )
+        await MqttAvailability.async_will_remove_from_hass(self)
 
     @property
     def device_state_attributes(self):
@@ -766,6 +771,14 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         Requires SUPPORT_SWING_MODE.
         """
         return self._swing_list
+    
+    @property
+    def available(self) -> bool:
+        """Return if the device is available."""
+        if not self.hass.data[DATA_MQTT].connected and not self.hass.is_stopping:
+            return False
+        return (self.availability_topic == '') or self._available
+
 
     async def async_set_hvac_mode(self, hvac_mode):
         """Set hvac mode."""
