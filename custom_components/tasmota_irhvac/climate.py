@@ -482,7 +482,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._sleep = sleep.lower()
         self._sub_state = None
         self._state_attrs = {}
-        self._available = False
         self._state_attrs.update(
             {attribute: getattr(self, '_' + attribute)
              for attribute in ATTRIBUTES_IRHVAC}
@@ -639,7 +638,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 # Update HA UI and State
                 self.schedule_update_ha_state()
 
-
         self._sub_state = await mqtt.subscription.async_subscribe_topics(
             self.hass,
             self._sub_state,
@@ -771,14 +769,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         Requires SUPPORT_SWING_MODE.
         """
         return self._swing_list
-    
-    @property
-    def available(self) -> bool:
-        """Return if the device is available."""
-        if not self.hass.data[DATA_MQTT].connected and not self.hass.is_stopping:
-            return False
-        return (self.availability_topic == '') or self._available
-
 
     async def async_set_hvac_mode(self, hvac_mode):
         """Set hvac mode."""
