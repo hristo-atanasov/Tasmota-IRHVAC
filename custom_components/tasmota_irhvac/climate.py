@@ -438,7 +438,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         """Initialize the thermostat."""
         self.topic = topic
         self.hass = hass
-        self._vendor = vendor
+        self._vendor = vendor.lower()
         self._name = name
         self.sensor_entity_id = sensor_entity_id
         self.state_topic = state_topic
