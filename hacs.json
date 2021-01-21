@@ -1,4 +1,5 @@
 {
   "name": "Tasmota-IRHVAC",
-  "homeassistant": "0.118.0"
+  "homeassistant": "0.118.0",
+  "iot_class": ["Assumed State", "Local Push"]
 }
