@@ -438,7 +438,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         """Initialize the thermostat."""
         self.topic = topic
         self.hass = hass
-        self._vendor = vendor.lower()
+        self._vendor = vendor
         self._name = name
         self.sensor_entity_id = sensor_entity_id
         self.state_topic = state_topic
@@ -548,7 +548,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
 
             payload = json_payload["IRHVAC"]
 
-            if payload["Vendor"].lower() == self._vendor:
+            if payload["Vendor"] == self._vendor:
                 # All values in the payload are Optional
                 if "Power" in payload:
                     self.power_mode = payload["Power"].lower()
