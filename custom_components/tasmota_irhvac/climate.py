@@ -922,7 +922,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         try:
             self._cur_temp = float(state.state)
         except ValueError as ex:
-            _LOGGER.error("Unable to update from sensor: %s", ex)
+            _LOGGER.debug("Unable to update from sensor: %s", ex)
 
     @property
     def _is_device_active(self):
