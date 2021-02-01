@@ -32,11 +32,9 @@ from homeassistant.components.climate.const import (
     HVAC_MODE_COOL,
     HVAC_MODE_HEAT,
     HVAC_MODE_OFF,
-    CURRENT_HVAC_OFF,
     CURRENT_HVAC_HEAT,
     CURRENT_HVAC_COOL,
     CURRENT_HVAC_DRY,
-    CURRENT_HVAC_IDLE,
     CURRENT_HVAC_FAN,
     PRESET_AWAY,
     PRESET_NONE,
@@ -712,9 +710,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
 
         Need to be one of CURRENT_HVAC_*.
         """
-        if self._hvac_mode == HVAC_MODE_OFF:
-            return CURRENT_HVAC_OFF
-        elif self._hvac_mode == HVAC_MODE_HEAT:
+        if self._hvac_mode == HVAC_MODE_HEAT:
             return CURRENT_HVAC_HEAT
         elif self._hvac_mode == HVAC_MODE_COOL:
             return CURRENT_HVAC_COOL
@@ -722,7 +718,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             return CURRENT_HVAC_DRY
         elif self._hvac_mode == HVAC_MODE_FAN_ONLY:
             return CURRENT_HVAC_FAN
-        return None
+        return self._hvac_mode
 
     @property
     def target_temperature(self):
