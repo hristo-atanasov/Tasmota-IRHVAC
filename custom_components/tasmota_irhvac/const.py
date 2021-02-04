@@ -84,6 +84,7 @@ CONF_FILTER = "default_filter_mode"
 CONF_CLEAN = "default_clean_mode"
 CONF_BEEP = "default_beep_mode"
 CONF_SLEEP = "default_sleep_mode"
+CONF_KEEP_MODE = "keep_mode_when_off"
 
 # Platform specific default values
 DEFAULT_NAME = "IR AirConditioner"
@@ -106,6 +107,7 @@ DEFAULT_CONF_FILTER = "off"
 DEFAULT_CONF_CLEAN = "off"
 DEFAULT_CONF_BEEP = "off"
 DEFAULT_CONF_SLEEP = "-1"
+DEFAULT_CONF_KEEP_MODE = False
 
 ATTR_NAME = "name"
 ATTR_VALUE = "value"
@@ -121,6 +123,7 @@ ATTR_FILTERS = 'filters'
 ATTR_CLEAN = 'clean'
 ATTR_BEEP = 'beep'
 ATTR_SLEEP = 'sleep'
+ATTR_LAST_ON_MODE = 'last_on_mode'
 
 SERVICE_ECONO_MODE = 'set_econo'
 SERVICE_TURBO_MODE = 'set_turbo'
@@ -141,7 +144,7 @@ ATTRIBUTES_IRHVAC = {
     ATTR_CLEAN: 'clean',
     ATTR_BEEP: 'beep',
     ATTR_SLEEP: 'sleep',
-
+    ATTR_LAST_ON_MODE: 'last_on_mode',
 }
 
 ON_OFF_LIST = [
