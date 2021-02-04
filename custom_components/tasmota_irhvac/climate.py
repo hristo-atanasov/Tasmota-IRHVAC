@@ -1,5 +1,4 @@
 """Adds support for generic thermostat units."""
-import math
 import json
 import logging
 import uuid
@@ -561,10 +560,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                     self._hvac_mode = payload["Mode"].lower()
                 if "Temp" in payload:
                     if payload["Temp"] > 0:
-                        if payload["Temp"] > self._max_temp:
-                            self._target_temp = payload["Temp"] - (self._max_temp - self._min_temp + self._temp_precision)
-                        else:
-                            self._target_temp = payload["Temp"]
+                        self._target_temp = payload["Temp"]
                 if "Celsius" in payload:
                     self._celsius = payload["Celsius"].lower()
                 if "Quiet" in payload:
@@ -985,11 +981,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             swing_h = STATE_AUTO
         elif self.swing_mode == SWING_VERTICAL:
             swing_v = STATE_AUTO
-        # temp 0.5
-        if (float(self._target_temp) < math.ceil(float(self._target_temp))):
-            target_temp = self._target_temp + (self._max_temp - self._min_temp + self._temp_precision)
-        else :
-            target_temp = self._target_temp
         # Populate the payload
         payload_data = {
             "Vendor": self._vendor,
@@ -997,7 +988,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             "Power": self.power_mode,
             "Mode": self._hvac_mode,
             "Celsius": self._celsius,
-            "Temp": target_temp,
+            "Temp": self._target_temp,
             "FanSpeed": fan_speed,
             "SwingV": swing_v,
             "SwingH": swing_h,
