@@ -70,6 +70,8 @@ from .const import (
     ATTR_CLEAN,
     ATTR_BEEP,
     ATTR_SLEEP,
+    ATTR_FAN_MODE,
+    ATTR_SWING_MODE,
     ATTRIBUTES_IRHVAC,
     STATE_AUTO,
     STATE_COOL,
@@ -304,31 +306,8 @@ SERVICE_TO_METHOD = {
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the generic thermostat platform."""
-    name = config.get(CONF_NAME)
-    topic = config.get(CONF_COMMAND_TOPIC)
     vendor = config.get(CONF_VENDOR)
     protocol = config.get(CONF_PROTOCOL)
-    sensor_entity_id = config.get(CONF_TEMP_SENSOR)
-    state_topic = config[CONF_STATE_TOPIC]
-    min_temp = config[CONF_MIN_TEMP]
-    max_temp = config[CONF_MAX_TEMP]
-    target_temp = config[CONF_TARGET_TEMP]
-    initial_operation_mode = config[CONF_INITIAL_OPERATION_MODE]
-    away_temp = config[CONF_AWAY_TEMP]
-    precision = config[CONF_PRECISION]
-    modes_list = config[CONF_MODES_LIST]
-    fan_list = config[CONF_FAN_LIST]
-    swing_list = config[CONF_SWING_LIST]
-    quiet = config[CONF_QUIET]
-    turbo = config[CONF_TURBO]
-    econo = config[CONF_ECONO]
-    model = config[CONF_MODEL]
-    celsius = config[CONF_CELSIUS]
-    light = config[CONF_LIGHT]
-    filters = config[CONF_FILTER]
-    clean = config[CONF_CLEAN]
-    beep = config[CONF_BEEP]
-    sleep = config[CONF_SLEEP]
 
     if DATA_KEY not in hass.data:
         hass.data[DATA_KEY] = {}
@@ -343,30 +322,8 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     tasmotaIrhvac = TasmotaIrhvac(
         hass,
-        topic,
         vendor,
-        name,
-        sensor_entity_id,
-        state_topic,
-        min_temp,
-        max_temp,
-        target_temp,
-        initial_operation_mode,
-        away_temp,
-        precision,
-        modes_list,
-        fan_list,
-        swing_list,
-        quiet,
-        turbo,
-        econo,
-        model,
-        celsius,
-        light,
-        filters,
-        clean,
-        beep,
-        sleep,
+        config,
     )
     uuidstr = uuid.uuid4().hex
     hass.data[DATA_KEY][uuidstr] = tasmotaIrhvac
@@ -414,75 +371,51 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
     def __init__(
         self,
         hass,
-        topic,
         vendor,
-        name,
-        sensor_entity_id,
-        state_topic,
-        min_temp,
-        max_temp,
-        target_temp,
-        initial_operation_mode,
-        away_temp,
-        precision,
-        modes_list,
-        fan_list,
-        swing_list,
-        quiet,
-        turbo,
-        econo,
-        model,
-        celsius,
-        light,
-        filters,
-        clean,
-        beep,
-        sleep,
+        config,
     ):
         """Initialize the thermostat."""
-        self.topic = topic
+        self.topic = config.get(CONF_COMMAND_TOPIC)
         self.hass = hass
         self._vendor = vendor
-        self._name = name
-        self.sensor_entity_id = sensor_entity_id
-        self.state_topic = state_topic
-        self._hvac_mode = initial_operation_mode
-        self._saved_target_temp = target_temp or away_temp
-        self._temp_precision = precision
-        self._hvac_list = modes_list
-        self._fan_list = fan_list
-        self._fan_mode = fan_list[0]
-        self._swing_list = swing_list
-        self._swing_mode = swing_list[0]
+        self._name = config.get(CONF_NAME)
+        self.sensor_entity_id = config.get(CONF_TEMP_SENSOR)
+        self.state_topic = config[CONF_STATE_TOPIC]
+        self._hvac_mode = config[CONF_INITIAL_OPERATION_MODE]
+        self._saved_target_temp = config[CONF_TARGET_TEMP] or config[CONF_AWAY_TEMP]
+        self._temp_precision = config[CONF_PRECISION]
+        self._hvac_list = config[CONF_MODES_LIST]
+        self._fan_list = config[CONF_FAN_LIST]
+        self._fan_mode = self._fan_list[0]
+        self._swing_list = config[CONF_SWING_LIST]
+        self._swing_mode = self._swing_list[0]
         self._enabled = False
         self.power_mode = STATE_OFF
-        if initial_operation_mode is not STATE_OFF:
+        if self._hvac_mode is not STATE_OFF:
             self.power_mode = STATE_ON
             self._enabled = True
         self._active = False
         self._cur_temp = None
-        self._min_temp = min_temp
-        self._max_temp = max_temp
-        self._target_temp = target_temp
+        self._min_temp = config[CONF_MIN_TEMP]
+        self._max_temp = config[CONF_MAX_TEMP]
+        self._target_temp = config[CONF_TARGET_TEMP]
         self._unit = hass.config.units.temperature_unit
         self._support_flags = SUPPORT_FLAGS
-        if away_temp is not None:
+        if config[CONF_AWAY_TEMP] is not None:
             self._support_flags = SUPPORT_FLAGS | SUPPORT_PRESET_MODE
-        self._away_temp = away_temp
+        self._away_temp = config[CONF_AWAY_TEMP]
         self._is_away = False
-        self._modes_list = modes_list
-        self._fan_list = fan_list
-        self._swing_list = swing_list
-        self._quiet = quiet.lower()
-        self._turbo = turbo.lower()
-        self._econo = econo.lower()
-        self._model = model
-        self._celsius = celsius
-        self._light = light.lower()
-        self._filters = filters.lower()
-        self._clean = clean.lower()
-        self._beep = beep.lower()
-        self._sleep = sleep.lower()
+        self._modes_list = config[CONF_MODES_LIST]
+        self._quiet = config[CONF_QUIET].lower()
+        self._turbo = config[CONF_TURBO].lower()
+        self._econo = config[CONF_ECONO].lower()
+        self._model = config[CONF_MODEL]
+        self._celsius = config[CONF_CELSIUS]
+        self._light = config[CONF_LIGHT].lower()
+        self._filters = config[CONF_FILTER].lower()
+        self._clean = config[CONF_CLEAN].lower()
+        self._beep = config[CONF_BEEP].lower()
+        self._sleep = config[CONF_SLEEP].lower()
         self._sub_state = None
         self._state_attrs = {}
         self._state_attrs.update(
@@ -518,9 +451,13 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                     old_state.attributes[ATTR_TEMPERATURE])
             if old_state.attributes.get(ATTR_PRESET_MODE) == PRESET_AWAY:
                 self._is_away = True
-            if not self._hvac_mode and old_state.state:
+            if old_state.state:
                 self._hvac_mode = old_state.state
                 self._enabled = self._hvac_mode != STATE_OFF
+            if old_state.attributes.get(ATTR_FAN_MODE) is not None:
+                self._fan_mode = old_state.attributes.get(ATTR_FAN_MODE)
+            if old_state.attributes.get(ATTR_SWING_MODE) is not None:
+                self._swing_mode = old_state.attributes.get(ATTR_SWING_MODE)
         else:
             # No previous state, try and restore defaults
             if self._target_temp is None:
