@@ -122,9 +122,6 @@ ATTR_CLEAN = 'clean'
 ATTR_BEEP = 'beep'
 ATTR_SLEEP = 'sleep'
 
-ATTR_FAN_MODE = 'fan_mode'
-ATTR_SWING_MODE = 'swing_mode'
-
 SERVICE_ECONO_MODE = 'set_econo'
 SERVICE_TURBO_MODE = 'set_turbo'
 SERVICE_QUIET_MODE = 'set_quiet'
