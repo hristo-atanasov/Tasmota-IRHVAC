@@ -100,6 +100,7 @@ from .const import (
     CONF_COMMAND_TOPIC,
     CONF_STATE_TOPIC,
     CONF_TEMP_SENSOR,
+    CONF_POWER_SENSOR,
     CONF_MIN_TEMP,
     CONF_MAX_TEMP,
     CONF_TARGET_TEMP,
@@ -180,6 +181,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
             CONF_COMMAND_TOPIC, default=DEFAULT_COMMAND_TOPIC
         ): mqtt.valid_publish_topic,
         vol.Required(CONF_TEMP_SENSOR): cv.entity_id,
+        vol.Optional(CONF_POWER_SENSOR, default=""): cv.entity_id,
         vol.Optional(
             CONF_STATE_TOPIC, default=DEFAULT_STATE_TOPIC
         ): mqtt.valid_subscribe_topic,
@@ -380,6 +382,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._vendor = vendor
         self._name = config.get(CONF_NAME)
         self.sensor_entity_id = config.get(CONF_TEMP_SENSOR)
+        self._pow_sensor_entity_id = config.get(CONF_POWER_SENSOR)
         self.state_topic = config[CONF_STATE_TOPIC]
         self._hvac_mode = config[CONF_INITIAL_OPERATION_MODE]
         self._saved_target_temp = config[CONF_TARGET_TEMP] or config[CONF_AWAY_TEMP]
@@ -468,6 +471,12 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         # Set default state to off
         if not self._hvac_mode:
             self._hvac_mode = HVAC_MODE_OFF
+
+        if self._pow_sensor_entity_id:
+            async_track_state_change(self.hass, self._pow_sensor_entity_id, 
+                                     self._async_power_sensor_changed)
+
+        await self.async_update_state_attrs()
 
     async def _subscribe_topics(self):
         """(Re)Subscribe to topics."""
@@ -746,7 +755,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         if temperature is None:
             return
         self._target_temp = temperature
-        self.power_mode = STATE_ON
+        if not self._hvac_mode.lower() == HVAC_MODE_OFF:
+            self.power_mode = STATE_ON
         await self.async_send_cmd(False)
 
     async def async_set_fan_mode(self, fan_mode):
@@ -758,7 +768,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             _LOGGER.error(self._fan_list)
             return
         self._fan_mode = fan_mode
-        self.power_mode = STATE_ON
+        if not self._hvac_mode.lower() == HVAC_MODE_OFF:
+            self.power_mode = STATE_ON
         await self.async_send_cmd(False)
 
     async def async_set_swing_mode(self, swing_mode):
@@ -770,7 +781,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             _LOGGER.error(self._swing_list)
             return
         self._swing_mode = swing_mode
-        self.power_mode = STATE_ON
+        if not self._hvac_mode.lower() == HVAC_MODE_OFF:
+            self.power_mode = STATE_ON
         await self.async_send_cmd(False)
 
     async def async_set_econo(self, econo):
@@ -826,6 +838,31 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         """Set new target sleep mode."""
         self._sleep = sleep.lower()
         await self.async_send_cmd(True)
+
+    async def _async_power_sensor_changed(self, entity_id, old_state, new_state):
+        """Handle power sensor changes."""
+        if new_state is None or old_state is None:
+            return
+
+        if new_state.state == old_state.state:
+            return
+
+        if new_state.state == STATE_ON and self._hvac_mode == HVAC_MODE_OFF:
+            #self._on_by_remote = True
+            if self._last_on_mode is not None:
+                self._hvac_mode = self._last_on_mode
+            else:
+                self._hvac_mode = STATE_ON
+
+            await self.async_update_ha_state()
+
+        if new_state.state == STATE_OFF:
+            #self._on_by_remote = False
+            if self._hvac_mode != HVAC_MODE_OFF:
+                self._hvac_mode = HVAC_MODE_OFF
+            await self.async_update_ha_state()
+
+        await async_update_state_attrs()
 
     async def async_send_cmd(self, attr_update=False):
         if attr_update:
