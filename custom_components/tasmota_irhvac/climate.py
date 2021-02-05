@@ -7,6 +7,10 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 
 from homeassistant.components import mqtt
+from homeassistant.components.mqtt.mixins import (
+    MqttAvailability,
+    MQTT_AVAILABILITY_SCHEMA,
+)
 from homeassistant.components.climate import PLATFORM_SCHEMA
 try:
     from homeassistant.components.climate import ClimateEntity
@@ -246,6 +250,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(MQTT_AVAILABILITY_SCHEMA.schema)
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(mqtt.MQTT_BASE_PLATFORM_SCHEMA.schema)
+
 IRHVAC_SERVICE_SCHEMA = vol.Schema(
     {vol.Required(ATTR_ENTITY_ID): cv.entity_ids})
 
@@ -371,7 +378,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         )
 
 
-class TasmotaIrhvac(ClimateEntity, RestoreEntity):
+class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     """Representation of a Generic Thermostat device."""
 
     def __init__(
@@ -432,6 +439,15 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             {attribute: getattr(self, '_' + attribute)
              for attribute in ATTRIBUTES_IRHVAC}
         )
+
+        path = self.topic.split('/')
+        mqtt_availability_config = config
+        mqtt_availability_config.update({
+            "availability_topic": "tele/" + path[1] + "/LWT",
+            "payload_available": "Online",
+            "payload_not_available": "Offline",
+        })
+        MqttAvailability.__init__(self, mqtt_availability_config)
 
     async def async_added_to_hass(self):
         """Run when entity about to be added."""
@@ -615,6 +631,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._sub_state = await mqtt.subscription.async_unsubscribe_topics(
             self.hass, self._sub_state
         )
+        await MqttAvailability.async_will_remove_from_hass(self)
 
     @property
     def unique_id(self):
