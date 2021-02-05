@@ -881,7 +881,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                 self._hvac_mode = HVAC_MODE_OFF
             await self.async_update_ha_state()
 
-        await async_update_state_attrs()
+        await self.async_update_state_attrs()
 
     async def async_send_cmd(self, attr_update=False):
         if attr_update:
