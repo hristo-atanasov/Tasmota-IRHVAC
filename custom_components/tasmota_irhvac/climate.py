@@ -132,7 +132,6 @@ from .const import (
     DEFAULT_MIN_TEMP,
     DEFAULT_MAX_TEMP,
     DEFAULT_PRECISION,
-    DEFAULT_AWAY_TEMP,
     DEFAULT_FAN_LIST,
     DEFAULT_CONF_QUIET,
     DEFAULT_CONF_TURBO,
@@ -173,7 +172,6 @@ SUPPORT_FLAGS = (
     SUPPORT_TARGET_TEMPERATURE
     | SUPPORT_FAN_MODE
     | SUPPORT_SWING_MODE
-    | SUPPORT_PRESET_MODE
 )
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
@@ -199,7 +197,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
             [STATE_HEAT, STATE_COOL, STATE_AUTO,
                 STATE_DRY, STATE_FAN_ONLY, STATE_OFF]
         ),
-        vol.Optional(CONF_AWAY_TEMP, default=DEFAULT_AWAY_TEMP): vol.Coerce(float),
+        vol.Optional(CONF_AWAY_TEMP): vol.Coerce(float),
         vol.Optional(CONF_PRECISION, default=DEFAULT_PRECISION): vol.In(
             [PRECISION_TENTHS, PRECISION_HALVES, PRECISION_WHOLE]
         ),
@@ -392,7 +390,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._pow_sensor_entity_id = config.get(CONF_POWER_SENSOR)
         self.state_topic = config[CONF_STATE_TOPIC]
         self._hvac_mode = config[CONF_INITIAL_OPERATION_MODE]
-        self._saved_target_temp = config[CONF_TARGET_TEMP] or config[CONF_AWAY_TEMP]
+        self._away_temp = config.get(CONF_AWAY_TEMP)
+        self._saved_target_temp = config[CONF_TARGET_TEMP] or self._away_temp
         self._temp_precision = config[CONF_PRECISION]
         self._hvac_list = config[CONF_MODES_LIST]
         self._fan_list = config[CONF_FAN_LIST]
@@ -411,9 +410,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._target_temp = config[CONF_TARGET_TEMP]
         self._unit = hass.config.units.temperature_unit
         self._support_flags = SUPPORT_FLAGS
-        if config[CONF_AWAY_TEMP] is not None:
+        if self._away_temp is not None:
             self._support_flags = SUPPORT_FLAGS | SUPPORT_PRESET_MODE
-        self._away_temp = config[CONF_AWAY_TEMP]
         self._is_away = False
         self._modes_list = config[CONF_MODES_LIST]
         self._quiet = config[CONF_QUIET].lower()
