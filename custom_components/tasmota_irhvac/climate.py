@@ -7,7 +7,10 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 
 from homeassistant.components import mqtt
-from homeassistant.components.mqtt import MqttAvailability
+from homeassistant.components.mqtt.mixins import (
+    MqttAvailability,
+    MQTT_AVAILABILITY_SCHEMA,
+)
 from homeassistant.components.climate import PLATFORM_SCHEMA
 try:
     from homeassistant.components.climate import ClimateEntity
@@ -241,7 +244,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(mqtt.MQTT_AVAILABILITY_SCHEMA.schema)
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(MQTT_AVAILABILITY_SCHEMA.schema)
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(mqtt.MQTT_BASE_PLATFORM_SCHEMA.schema)
 
 IRHVAC_SERVICE_SCHEMA = vol.Schema(
@@ -427,7 +430,14 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
              for attribute in ATTRIBUTES_IRHVAC}
         )
 
-    MqttAvailability.__init__(self, config)
+        path = self.topic.split('/')
+        mqtt_availability_config = config
+        mqtt_availability_config.update({
+            "availability_topic": "tele/" + path[1] + "/LWT",
+            "payload_available": "Online",
+            "payload_not_available": "Offline",
+        })
+        MqttAvailability.__init__(self, mqtt_availability_config)
 
     async def async_added_to_hass(self):
         """Run when entity about to be added."""
