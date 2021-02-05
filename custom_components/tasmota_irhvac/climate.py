@@ -53,6 +53,7 @@ from homeassistant.const import (
     ATTR_ENTITY_ID,
     ATTR_TEMPERATURE,
     CONF_NAME,
+    CONF_UNIQUE_ID,
     EVENT_HOMEASSISTANT_START,
     PRECISION_HALVES,
     PRECISION_TENTHS,
@@ -185,6 +186,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         ): mqtt.valid_publish_topic,
         vol.Required(CONF_TEMP_SENSOR): cv.entity_id,
         vol.Optional(CONF_POWER_SENSOR): cv.entity_id,
+        vol.Optional(CONF_UNIQUE_ID): cv.string,
         vol.Optional(
             CONF_STATE_TOPIC, default=DEFAULT_STATE_TOPIC
         ): mqtt.valid_subscribe_topic,
@@ -381,6 +383,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         config,
     ):
         """Initialize the thermostat."""
+        self._unique_id = config.get(CONF_UNIQUE_ID)
         self.topic = config.get(CONF_COMMAND_TOPIC)
         self.hass = hass
         self._vendor = vendor
@@ -614,6 +617,11 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._sub_state = await mqtt.subscription.async_unsubscribe_topics(
             self.hass, self._sub_state
         )
+
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        return self._unique_id
 
     @property
     def device_state_attributes(self):
