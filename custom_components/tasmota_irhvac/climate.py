@@ -457,6 +457,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                     old_state.attributes[ATTR_TEMPERATURE])
             if old_state.attributes.get(ATTR_PRESET_MODE) == PRESET_AWAY:
                 self._is_away = True
+            if old_state.attributes.get(ATTR_LAST_ON_MODE) is not None:
+                self._last_on_mode = old_state.attributes.get(ATTR_LAST_ON_MODE)
             if old_state.state:
                 self._hvac_mode = old_state.state
                 self._enabled = self._hvac_mode != STATE_OFF
@@ -466,8 +468,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                 self._fan_mode = old_state.attributes.get(ATTR_FAN_MODE)
             if old_state.attributes.get(ATTR_SWING_MODE) is not None:
                 self._swing_mode = old_state.attributes.get(ATTR_SWING_MODE)
-            if old_state.attributes.get(ATTR_LAST_ON_MODE) is not None:
-                self._last_on_mode = old_state.attributes.get(ATTR_LAST_ON_MODE)
         else:
             # No previous state, try and restore defaults
             if self._target_temp is None:
@@ -734,6 +734,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
 
     async def async_set_hvac_mode(self, hvac_mode):
         """Set hvac mode."""
+        update_attr = False
         if hvac_mode not in self._hvac_list or hvac_mode == HVAC_MODE_OFF:
             self._hvac_mode = HVAC_MODE_OFF
             self._enabled = False
@@ -742,12 +743,13 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             self._hvac_mode = self._last_on_mode = hvac_mode
             self._enabled = True
             self.power_mode = STATE_ON
+            update_attr = True
         # Ensure we update the current operation after changing the mode
-        await self.async_send_cmd(False)
+        await self.async_send_cmd(update_attr)
 
     async def async_turn_on(self):
         """Turn thermostat on."""
-        self._hvac_mode = self._last_on_mode
+        self._hvac_mode = self._last_on_mode if self._last_on_mode is not None else STATE_ON
         self.power_mode = STATE_ON
         await self.async_send_cmd(False)
 
