@@ -181,7 +181,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
             CONF_COMMAND_TOPIC, default=DEFAULT_COMMAND_TOPIC
         ): mqtt.valid_publish_topic,
         vol.Required(CONF_TEMP_SENSOR): cv.entity_id,
-        vol.Optional(CONF_POWER_SENSOR, default=""): cv.entity_id,
+        vol.Optional(CONF_POWER_SENSOR): cv.entity_id,
         vol.Optional(
             CONF_STATE_TOPIC, default=DEFAULT_STATE_TOPIC
         ): mqtt.valid_subscribe_topic,
