@@ -65,7 +65,8 @@ from homeassistant.const import (
     PRECISION_WHOLE,
     STATE_ON,
     STATE_OFF,
-    STATE_UNKNOWN
+    STATE_UNKNOWN,
+    STATE_UNAVAILABLE,
 )
 
 from .const import (
@@ -107,6 +108,7 @@ from .const import (
     CONF_COMMAND_TOPIC,
     CONF_STATE_TOPIC,
     CONF_TEMP_SENSOR,
+    CONF_HUMIDITY_SENSOR,
     CONF_POWER_SENSOR,
     CONF_MIN_TEMP,
     CONF_MAX_TEMP,
@@ -188,6 +190,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
             CONF_COMMAND_TOPIC, default=DEFAULT_COMMAND_TOPIC
         ): mqtt.valid_publish_topic,
         vol.Required(CONF_TEMP_SENSOR): cv.entity_id,
+        vol.Optional(CONF_HUMIDITY_SENSOR): cv.entity_id,
         vol.Optional(CONF_POWER_SENSOR): cv.entity_id,
         vol.Optional(CONF_UNIQUE_ID): cv.string,
         vol.Optional(
@@ -395,6 +398,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._vendor = vendor
         self._name = config.get(CONF_NAME)
         self.sensor_entity_id = config.get(CONF_TEMP_SENSOR)
+        self._humidity_sensor = config.get(CONF_HUMIDITY_SENSOR)
         self._pow_sensor_entity_id = config.get(CONF_POWER_SENSOR)
         self.state_topic = config[CONF_STATE_TOPIC]
         self._hvac_mode = config[CONF_INITIAL_OPERATION_MODE]
@@ -415,6 +419,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._cur_temp = None
         self._min_temp = config[CONF_MIN_TEMP]
         self._max_temp = config[CONF_MAX_TEMP]
+        self._cur_humidity = None
         self._target_temp = config[CONF_TARGET_TEMP]
         self._unit = hass.config.units.temperature_unit
         self._support_flags = SUPPORT_FLAGS
@@ -499,6 +504,14 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         # Set default state to off
         if not self._hvac_mode:
             self._hvac_mode = HVAC_MODE_OFF
+
+        if self._humidity_sensor:
+            async_track_state_change(self.hass, self._humidity_sensor, 
+                                     self._async_humidity_sensor_changed)
+
+            humidity_sensor_state = self.hass.states.get(self._humidity_sensor)
+            if humidity_sensor_state and humidity_sensor_state.state != STATE_UNKNOWN and humidity_sensor_state.state != STATE_UNAVAILABLE:
+                self._async_update_humidity(humidity_sensor_state)
 
         if self._pow_sensor_entity_id:
             async_track_state_change(self.hass, self._pow_sensor_entity_id, 
@@ -675,6 +688,11 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     def current_temperature(self):
         """Return the sensor temperature."""
         return self._cur_temp
+
+    @property
+    def current_humidity(self):
+        """Return the current humidity."""
+        return self._cur_humidity
 
     @property
     def hvac_mode(self):
@@ -945,6 +963,14 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._async_update_temp(new_state)
         await self.async_update_ha_state()
 
+    async def _async_humidity_sensor_changed(self, entity_id, old_state, new_state):
+        """Handle humidity sensor changes."""
+        if new_state is None:
+            return
+
+        self._async_update_humidity(new_state)
+        await self.async_update_ha_state()
+
     @callback
     def _async_update_temp(self, state):
         """Update thermostat with latest state from sensor."""
@@ -952,6 +978,15 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             self._cur_temp = float(state.state)
         except ValueError as ex:
             _LOGGER.debug("Unable to update from sensor: %s", ex)
+
+    @callback
+    def _async_update_humidity(self, state):
+        """Update thermostat with latest state from humidity sensor."""
+        try:
+            if state.state != STATE_UNKNOWN and state.state != STATE_UNAVAILABLE:
+                self._cur_humidity = float(state.state)
+        except ValueError as ex:
+            _LOGGER.error("Unable to update from humidity sensor: %s", ex)
 
     @property
     def _is_device_active(self):
