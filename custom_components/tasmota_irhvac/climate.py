@@ -5,6 +5,7 @@ import uuid
 import asyncio
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
+import homeassistant.util.dt as dt_util
 
 from homeassistant.components import mqtt
 from homeassistant.components.mqtt.mixins import (
@@ -997,6 +998,10 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             swing_h = STATE_AUTO
         elif self.swing_mode == SWING_VERTICAL:
             swing_v = STATE_AUTO
+
+        _dt = dt_util.now()
+        _min = _dt.hour * 60 + _dt.minute
+
         # Populate the payload
         payload_data = {
             "Vendor": self._vendor,
@@ -1015,7 +1020,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             "Filter": self._filters,
             "Clean": self._clean,
             "Beep": self._beep,
-            "Sleep": self._sleep
+            "Sleep": self._sleep,
+            "Clock": int(_min),
+            "Weekday": int(_dt.weekday()),
         }
         payload = (json.dumps(payload_data))
         # Publish mqtt message
