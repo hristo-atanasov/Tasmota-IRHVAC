@@ -72,6 +72,8 @@ from .const import (
     ATTR_CLEAN,
     ATTR_BEEP,
     ATTR_SLEEP,
+    ATTR_SWINGV,
+    ATTR_SWINGH,
     ATTRIBUTES_IRHVAC,
     STATE_AUTO,
     STATE_COOL,
@@ -119,6 +121,8 @@ from .const import (
     CONF_CLEAN,
     CONF_BEEP,
     CONF_SLEEP,
+    CONF_SWINGV,
+    CONF_SWINGH,
     DATA_KEY,
     DOMAIN,
     DEFAULT_NAME,
@@ -237,6 +241,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_CLEAN, default=DEFAULT_CONF_CLEAN): cv.string,
         vol.Optional(CONF_BEEP, default=DEFAULT_CONF_BEEP): cv.string,
         vol.Optional(CONF_SLEEP, default=DEFAULT_CONF_SLEEP): cv.string,
+        vol.Optional(CONF_SWINGV): cv.string,
+        vol.Optional(CONF_SWINGH): cv.string,
     }
 )
 
@@ -417,6 +423,12 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._beep = config[CONF_BEEP].lower()
         self._sleep = config[CONF_SLEEP].lower()
         self._sub_state = None
+        self._swingv = config.get(CONF_SWINGV)
+        if self._swingv is not None:
+            self._swingv
+        self._swingh = config.get(CONF_SWINGH)
+        if self._swingh is not None:
+            self._swingh
         self._state_attrs = {}
         self._state_attrs.update(
             {attribute: getattr(self, '_' + attribute)
@@ -458,6 +470,10 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                 self._fan_mode = old_state.attributes.get(ATTR_FAN_MODE)
             if old_state.attributes.get(ATTR_SWING_MODE) is not None:
                 self._swing_mode = old_state.attributes.get(ATTR_SWING_MODE)
+            if old_state.attributes.get(ATTR_SWINGV) is not None:
+                self._swingv = old_state.attributes.get(ATTR_SWINGV)
+            if old_state.attributes.get(ATTR_SWINGH) is not None:
+                self._swingh = old_state.attributes.get(ATTR_SWINGH)
         else:
             # No previous state, try and restore defaults
             if self._target_temp is None:
@@ -516,7 +532,10 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                     self._beep = payload["Beep"].lower()
                 if "Sleep" in payload:
                     self._sleep = payload["Sleep"]
-
+                if  "SwingV" in payload:
+                    self._swingv = payload["SwingV"].lower()
+                if  "SwingH" in payload:
+                    self._swingh = payload["SwingH"].lower()
                 if (
                     "SwingV" in payload
                     and payload["SwingV"].lower() == STATE_AUTO
@@ -909,15 +928,24 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                 fan_speed = HVAC_FAN_AUTO
 
         # Set the swing mode - default off
-        swing_h = STATE_OFF
-        swing_v = STATE_OFF
-        if self.swing_mode == SWING_BOTH:
-            swing_h = STATE_AUTO
-            swing_v = STATE_AUTO
-        elif self.swing_mode == SWING_HORIZONTAL:
-            swing_h = STATE_AUTO
-        elif self.swing_mode == SWING_VERTICAL:
-            swing_v = STATE_AUTO
+        if self._swingv is None:
+            swing_v = STATE_OFF
+            if self.swing_mode == SWING_BOTH:
+                swing_v = STATE_AUTO
+            elif self.swing_mode == SWING_VERTICAL:
+                swing_v = STATE_AUTO
+        else:
+            swing_v = self._swingv
+
+        if self._swingh is None:
+            swing_h = STATE_OFF
+            if self.swing_mode == SWING_BOTH:
+                swing_h = STATE_AUTO
+            elif self.swing_mode == SWING_HORIZONTAL:
+                swing_h = STATE_AUTO
+        else:
+            swing_h = self._swingh
+
         # Populate the payload
         payload_data = {
             "Vendor": self._vendor,
