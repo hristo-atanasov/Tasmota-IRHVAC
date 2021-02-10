@@ -118,6 +118,7 @@ from .const import (
     CONF_INITIAL_OPERATION_MODE,
     CONF_AWAY_TEMP,
     CONF_PRECISION,
+    CONF_TEMP_STEP,
     CONF_MODES_LIST,
     CONF_FAN_LIST,
     CONF_SWING_LIST,
@@ -212,6 +213,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_AWAY_TEMP): vol.Coerce(float),
         vol.Optional(CONF_PRECISION, default=DEFAULT_PRECISION): vol.In(
             [PRECISION_TENTHS, PRECISION_HALVES, PRECISION_WHOLE]
+        ),
+        vol.Optional(CONF_TEMP_STEP, default=PRECISION_WHOLE): vol.In(
+            [PRECISION_HALVES, PRECISION_WHOLE]
         ),
         vol.Optional(CONF_MODES_LIST, default=DEFAULT_MODES_LIST): vol.All(
             cv.ensure_list, [vol.In(HVAC_MODES)]
@@ -411,6 +415,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._away_temp = config.get(CONF_AWAY_TEMP)
         self._saved_target_temp = config[CONF_TARGET_TEMP] or self._away_temp
         self._temp_precision = config[CONF_PRECISION]
+        self._temp_step = config[CONF_TEMP_STEP]
         self._hvac_list = config[CONF_MODES_LIST]
         self._fan_list = config[CONF_FAN_LIST]
         self._fan_mode = self._fan_list[0]
@@ -696,7 +701,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     @property
     def target_temperature_step(self):
         """Return the supported step of target temperature."""
-        return self._temp_precision
+        return self._temp_step
 
     @property
     def temperature_unit(self):
