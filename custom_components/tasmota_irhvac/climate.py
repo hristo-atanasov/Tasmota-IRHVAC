@@ -502,14 +502,10 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 self._enabled = self._hvac_mode != STATE_OFF
                 if self._enabled:
                     self._last_on_mode = self._hvac_mode
-            if old_state.attributes.get(ATTR_FAN_MODE) is not None:
-                self._fan_mode = old_state.attributes.get(ATTR_FAN_MODE)
-            if old_state.attributes.get(ATTR_SWING_MODE) is not None:
-                self._swing_mode = old_state.attributes.get(ATTR_SWING_MODE)
-            if old_state.attributes.get(ATTR_SWINGV) is not None:
-                self._swingv = old_state.attributes.get(ATTR_SWINGV)
-            if old_state.attributes.get(ATTR_SWINGH) is not None:
-                self._swingh = old_state.attributes.get(ATTR_SWINGH)
+            for attr in ATTRIBUTES_IRHVAC:
+                val = old_state.attributes.get(attr)
+                if val is not None:
+                    setattr(self, "_" + attr, val)
         else:
             # No previous state, try and restore defaults
             if self._target_temp is None:
