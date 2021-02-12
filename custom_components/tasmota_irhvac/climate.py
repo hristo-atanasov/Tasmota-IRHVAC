@@ -457,11 +457,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._swingh = config.get(CONF_SWINGH)
         if self._swingh is not None:
             self._swingh
-        self._state_attrs = {}
-        self._state_attrs.update(
-            {attribute: getattr(self, '_' + attribute)
-             for attribute in ATTRIBUTES_IRHVAC}
-        )
 
         path = self.topic.split('/')
         mqtt_availability_config = config
@@ -537,8 +532,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         if self._pow_sensor_entity_id:
             async_track_state_change(self.hass, self._pow_sensor_entity_id, 
                                      self._async_power_sensor_changed)
-
-        await self.async_update_state_attrs()
 
     async def _subscribe_topics(self):
         """(Re)Subscribe to topics."""
@@ -644,11 +637,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                     self._last_on_mode = self._hvac_mode
                     self._enabled = True
 
-                # Update state attributes
-                self._state_attrs.update(
-                    {attribute: getattr(self, '_' + attribute)
-                     for attribute in ATTRIBUTES_IRHVAC}
-                )
                 # Update HA UI and State
                 self.schedule_update_ha_state()
 
@@ -679,7 +667,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     @property
     def device_state_attributes(self):
         """Return the state attributes of the device."""
-        return self._state_attrs
+        return {attribute: getattr(self, '_' + attribute)
+             for attribute in ATTRIBUTES_IRHVAC}
 
     @property
     def should_poll(self):
@@ -809,7 +798,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
 
     async def async_set_hvac_mode(self, hvac_mode):
         """Set hvac mode."""
-        update_attr = False
         if hvac_mode not in self._hvac_list or hvac_mode == HVAC_MODE_OFF:
             self._hvac_mode = HVAC_MODE_OFF
             self._enabled = False
@@ -818,21 +806,20 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             self._hvac_mode = self._last_on_mode = hvac_mode
             self._enabled = True
             self.power_mode = STATE_ON
-            update_attr = True
         # Ensure we update the current operation after changing the mode
-        await self.async_send_cmd(update_attr)
+        await self.async_send_cmd()
 
     async def async_turn_on(self):
         """Turn thermostat on."""
         self._hvac_mode = self._last_on_mode if self._last_on_mode is not None else STATE_ON
         self.power_mode = STATE_ON
-        await self.async_send_cmd(False)
+        await self.async_send_cmd()
 
     async def async_turn_off(self):
         """Turn thermostat off."""
         self._hvac_mode = STATE_OFF
         self.power_mode = STATE_OFF
-        await self.async_send_cmd(False)
+        await self.async_send_cmd()
 
     async def async_set_temperature(self, **kwargs):
         """Set new target temperature."""
@@ -842,7 +829,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._target_temp = temperature
         if not self._hvac_mode.lower() == HVAC_MODE_OFF:
             self.power_mode = STATE_ON
-        await self.async_send_cmd(False)
+        await self.async_send_cmd()
 
     async def async_set_fan_mode(self, fan_mode):
         """Set new target fan mode."""
@@ -855,7 +842,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._fan_mode = fan_mode
         if not self._hvac_mode.lower() == HVAC_MODE_OFF:
             self.power_mode = STATE_ON
-        await self.async_send_cmd(False)
+        await self.async_send_cmd()
 
     async def async_set_swing_mode(self, swing_mode):
         """Set new target swing operation."""
@@ -868,61 +855,61 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._swing_mode = swing_mode
         if not self._hvac_mode.lower() == HVAC_MODE_OFF:
             self.power_mode = STATE_ON
-        await self.async_send_cmd(False)
+        await self.async_send_cmd()
 
     async def async_set_econo(self, econo):
         """Set new target econo mode."""
         if econo not in ON_OFF_LIST:
             return
         self._econo = econo.lower()
-        await self.async_send_cmd(True)
+        await self.async_send_cmd()
 
     async def async_set_turbo(self, turbo):
         """Set new target turbo mode."""
         if turbo not in ON_OFF_LIST:
             return
         self._turbo = turbo.lower()
-        await self.async_send_cmd(True)
+        await self.async_send_cmd()
 
     async def async_set_quiet(self, quiet):
         """Set new target quiet mode."""
         if quiet not in ON_OFF_LIST:
             return
         self._quiet = quiet.lower()
-        await self.async_send_cmd(True)
+        await self.async_send_cmd()
 
     async def async_set_light(self, light):
         """Set new target light mode."""
         if light not in ON_OFF_LIST:
             return
         self._light = light.lower()
-        await self.async_send_cmd(True)
+        await self.async_send_cmd()
 
     async def async_set_filters(self, filters):
         """Set new target filters mode."""
         if filters not in ON_OFF_LIST:
             return
         self._filters = filters.lower()
-        await self.async_send_cmd(True)
+        await self.async_send_cmd()
 
     async def async_set_clean(self, clean):
         """Set new target clean mode."""
         if clean not in ON_OFF_LIST:
             return
         self._clean = clean.lower()
-        await self.async_send_cmd(True)
+        await self.async_send_cmd()
 
     async def async_set_beep(self, beep):
         """Set new target beep mode."""
         if beep not in ON_OFF_LIST:
             return
         self._beep = beep.lower()
-        await self.async_send_cmd(True)
+        await self.async_send_cmd()
 
     async def async_set_sleep(self, sleep):
         """Set new target sleep mode."""
         self._sleep = sleep.lower()
-        await self.async_send_cmd(True)
+        await self.async_send_cmd()
 
     async def _async_power_sensor_changed(self, entity_id, old_state, new_state):
         """Handle power sensor changes."""
@@ -947,17 +934,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 self.power_mode = STATE_OFF
                 await self.async_update_ha_state()
 
-    async def async_send_cmd(self, attr_update=False):
-        if attr_update:
-            await self.async_update_state_attrs()
+    async def async_send_cmd(self):
         await self.hass.async_add_executor_job(self.send_ir)
         await self.async_update_ha_state()
-
-    async def async_update_state_attrs(self):
-        self._state_attrs.update(
-            {attribute: getattr(self, '_' + attribute)
-             for attribute in ATTRIBUTES_IRHVAC}
-        )
 
     @property
     def min_temp(self):
