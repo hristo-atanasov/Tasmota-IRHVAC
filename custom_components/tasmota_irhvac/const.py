@@ -58,6 +58,8 @@ HVAC_MODES = [
     HVAC_MODE_FAN_AUTO,
 ]
 
+CONF_UNIQUE_ID = "unique_id"
+
 # Platform specific config entry names
 CONF_EXCLUSIVE_GROUP_VENDOR = "exclusive_group_vendor"
 CONF_VENDOR = "vendor"
