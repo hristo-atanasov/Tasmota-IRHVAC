@@ -194,7 +194,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Required(
             CONF_COMMAND_TOPIC, default=DEFAULT_COMMAND_TOPIC
         ): mqtt.valid_publish_topic,
-        vol.Required(CONF_TEMP_SENSOR): cv.entity_id,
+        vol.Optional(CONF_TEMP_SENSOR): cv.entity_id,
         vol.Optional(CONF_HUMIDITY_SENSOR): cv.entity_id,
         vol.Optional(CONF_POWER_SENSOR): cv.entity_id,
         vol.Optional(CONF_UNIQUE_ID): cv.string,
@@ -407,9 +407,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self.hass = hass
         self._vendor = vendor
         self._name = config.get(CONF_NAME)
-        self.sensor_entity_id = config.get(CONF_TEMP_SENSOR)
+        self._temp_sensor = config.get(CONF_TEMP_SENSOR)
         self._humidity_sensor = config.get(CONF_HUMIDITY_SENSOR)
-        self._pow_sensor_entity_id = config.get(CONF_POWER_SENSOR)
+        self._power_sensor = config.get(CONF_POWER_SENSOR)
         self.state_topic = config[CONF_STATE_TOPIC]
         self._hvac_mode = config[CONF_INITIAL_OPERATION_MODE]
         self._away_temp = config.get(CONF_AWAY_TEMP)
@@ -470,21 +470,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     async def async_added_to_hass(self):
         """Run when entity about to be added."""
         await super().async_added_to_hass()
-        # Add listener
-        async_track_state_change(
-            self.hass, self.sensor_entity_id, self._async_sensor_changed
-        )
-        await self._subscribe_topics()
-
-        @callback
-        def _async_startup(event):
-            """Init on startup."""
-            sensor_state = self.hass.states.get(self.sensor_entity_id)
-            if sensor_state and sensor_state.state != STATE_UNKNOWN:
-                self._async_update_temp(sensor_state)
-
-        self.hass.bus.async_listen_once(
-            EVENT_HOMEASSISTANT_START, _async_startup)
 
         # Check If we have an old state
         old_state = await self.async_get_last_state()
@@ -517,17 +502,23 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         if not self._hvac_mode:
             self._hvac_mode = HVAC_MODE_OFF
 
+        if self._temp_sensor:
+            async_track_state_change(self.hass, self._temp_sensor, self._async_sensor_changed)
+
+            temp_sensor_state = self.hass.states.get(self._temp_sensor)
+            if temp_sensor_state and temp_sensor_state.state != STATE_UNKNOWN and temp_sensor_state.state != STATE_UNAVAILABLE:
+                self._async_update_temp(temp_sensor_state.state)
+
+
         if self._humidity_sensor:
-            async_track_state_change(self.hass, self._humidity_sensor, 
-                                     self._async_humidity_sensor_changed)
+            async_track_state_change(self.hass, self._humidity_sensor, self._async_humidity_sensor_changed)
 
             humidity_sensor_state = self.hass.states.get(self._humidity_sensor)
             if humidity_sensor_state and humidity_sensor_state.state != STATE_UNKNOWN and humidity_sensor_state.state != STATE_UNAVAILABLE:
                 self._async_update_humidity(humidity_sensor_state)
 
-        if self._pow_sensor_entity_id:
-            async_track_state_change(self.hass, self._pow_sensor_entity_id, 
-                                     self._async_power_sensor_changed)
+        if self._power_sensor:
+            async_track_state_change(self.hass, self._power_sensor, self._async_power_sensor_changed)
 
     async def _subscribe_topics(self):
         """(Re)Subscribe to topics."""
