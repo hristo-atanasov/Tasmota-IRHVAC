@@ -926,28 +926,26 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
 
     async def _async_power_sensor_changed(self, entity_id, old_state, new_state):
         """Handle power sensor changes."""
-        if new_state is None or old_state is None:
+        if new_state is None:
             return
 
-        if new_state.state == old_state.state:
+        if old_state is not None and new_state.state == old_state.state:
             return
 
-        if new_state.state == STATE_ON and self._hvac_mode == HVAC_MODE_OFF:
-            #self._on_by_remote = True
-            if self._last_on_mode is not None:
-                self._hvac_mode = self._last_on_mode
-            else:
-                self._hvac_mode = STATE_ON
+        if new_state.state == STATE_ON:
+            if self._hvac_mode == HVAC_MODE_OFF or self.power_mode == STATE_ON:
+                if self._last_on_mode is not None:
+                    self._hvac_mode = self._last_on_mode
+                else:
+                    self._hvac_mode = STATE_ON
+                self.power_mode = STATE_ON
+                await self.async_update_ha_state()
 
-            await self.async_update_ha_state()
-
-        if new_state.state == STATE_OFF:
-            #self._on_by_remote = False
-            if self._hvac_mode != HVAC_MODE_OFF:
+        elif new_state.state == STATE_OFF:
+            if self._hvac_mode != HVAC_MODE_OFF or self.power_mode == STATE_OFF:
                 self._hvac_mode = HVAC_MODE_OFF
-            await self.async_update_ha_state()
-
-        await self.async_update_state_attrs()
+                self.power_mode = STATE_OFF
+                await self.async_update_ha_state()
 
     async def async_send_cmd(self, attr_update=False):
         if attr_update:
