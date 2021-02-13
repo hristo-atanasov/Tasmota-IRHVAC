@@ -471,6 +471,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         """Run when entity about to be added."""
         await super().async_added_to_hass()
 
+        # Add listener
+        await self._subscribe_topics()
+
         # Check If we have an old state
         old_state = await self.async_get_last_state()
         if old_state is not None:
