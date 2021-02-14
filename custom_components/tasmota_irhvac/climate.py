@@ -411,7 +411,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._humidity_sensor = config.get(CONF_HUMIDITY_SENSOR)
         self._power_sensor = config.get(CONF_POWER_SENSOR)
         self.state_topic = config[CONF_STATE_TOPIC]
-        self._hvac_mode = config[CONF_INITIAL_OPERATION_MODE]
+        self._hvac_mode = STATE_UNKNOWN
+        self._init_hvac_mode = config[CONF_INITIAL_OPERATION_MODE]
         self._away_temp = config.get(CONF_AWAY_TEMP)
         self._saved_target_temp = config[CONF_TARGET_TEMP] or self._away_temp
         self._temp_precision = config[CONF_PRECISION]
@@ -422,10 +423,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._swing_list = config[CONF_SWING_LIST]
         self._swing_mode = self._swing_list[0]
         self._enabled = False
-        self.power_mode = STATE_OFF
-        if self._hvac_mode is not STATE_OFF:
-            self.power_mode = STATE_ON
-            self._enabled = True
+        self.power_mode = None
         self._active = False
         self._cur_temp = None
         self._min_temp = config[CONF_MIN_TEMP]
@@ -453,11 +451,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._keep_mode = config[CONF_KEEP_MODE]
         self._last_on_mode = None
         self._swingv = config.get(CONF_SWINGV)
-        if self._swingv is not None:
-            self._swingv
         self._swingh = config.get(CONF_SWINGH)
-        if self._swingh is not None:
-            self._swingh
 
         path = self.topic.split('/')
         mqtt_availability_config = config
@@ -504,9 +498,16 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             _LOGGER.warning(
                 "No previously saved temperature, setting to %s", self._target_temp
             )
-        # Set default state to off
-        if not self._hvac_mode:
-            self._hvac_mode = HVAC_MODE_OFF
+        # Set initial state
+        if self._hvac_mode is None:
+            self._hvac_mode = self._init_hvac_mode
+
+        if self._hvac_mode is HVAC_MODE_OFF:
+            self.power_mode = STATE_OFF
+            self._enabled = False
+        else:
+            self.power_mode = STATE_ON
+            self._enabled = True
 
         if self._temp_sensor:
             async_track_state_change(self.hass, self._temp_sensor, self._async_sensor_changed)
@@ -638,7 +639,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 await self.async_update_ha_state()
 
                 # Check power sensor state
-                if self._power_sensor and prev_power != self.power_mode:
+                if self._power_sensor and prev_power is not None and prev_power != self.power_mode:
                     await asyncio.sleep(3)
                     state = self.hass.states.get(self._power_sensor)
                     await self._async_power_sensor_changed(self._power_sensor, None, state)
