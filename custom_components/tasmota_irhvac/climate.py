@@ -431,7 +431,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._min_temp = config[CONF_MIN_TEMP]
         self._max_temp = config[CONF_MAX_TEMP]
         self._cur_humidity = None
-        self._target_temp = config[CONF_TARGET_TEMP]
+        self._target_temp = None
+        self._def_target_temp = config[CONF_TARGET_TEMP]
         self._unit = hass.config.units.temperature_unit
         self._support_flags = SUPPORT_FLAGS
         if self._away_temp is not None:
@@ -499,7 +500,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         else:
             # No previous state, try and restore defaults
             if self._target_temp is None:
-                self._target_temp = 26.0
+                self._target_temp = self._def_target_temp
             _LOGGER.warning(
                 "No previously saved temperature, setting to %s", self._target_temp
             )
