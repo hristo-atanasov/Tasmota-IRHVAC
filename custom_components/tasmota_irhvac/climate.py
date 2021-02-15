@@ -499,7 +499,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 "No previously saved temperature, setting to %s", self._target_temp
             )
         # Set initial state
-        if self._hvac_mode is None:
+        if self._hvac_mode is STATE_UNKNOWN:
             self._hvac_mode = self._init_hvac_mode
 
         if self._hvac_mode is HVAC_MODE_OFF:
