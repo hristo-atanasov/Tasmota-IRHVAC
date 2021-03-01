@@ -183,7 +183,6 @@ _LOGGER = logging.getLogger(__name__)
 SUPPORT_FLAGS = (
     SUPPORT_TARGET_TEMPERATURE
     | SUPPORT_FAN_MODE
-    | SUPPORT_SWING_MODE
 )
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
@@ -421,7 +420,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._fan_list = config[CONF_FAN_LIST]
         self._fan_mode = self._fan_list[0]
         self._swing_list = config[CONF_SWING_LIST]
-        self._swing_mode = self._swing_list[0]
+        self._swing_mode = self._swing_list[0] if len(self._swing_list) > 0 else None
         self._enabled = False
         self.power_mode = None
         self._active = False
@@ -435,6 +434,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._support_flags = SUPPORT_FLAGS
         if self._away_temp is not None:
             self._support_flags = SUPPORT_FLAGS | SUPPORT_PRESET_MODE
+        if self._swing_mode is not None:
+            self._support_flags = SUPPORT_FLAGS | SUPPORT_SWING_MODE
         self._is_away = False
         self._modes_list = config[CONF_MODES_LIST]
         self._quiet = config[CONF_QUIET].lower()
@@ -1029,20 +1030,16 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 fan_speed = HVAC_FAN_AUTO
 
         # Set the swing mode - default off
-        if self._swingv is None:
+        if self._swingv is None or SWING_BOTH in self._swing_list or SWING_VERTICAL in self._swing_list:
             swing_v = STATE_OFF
-            if self.swing_mode == SWING_BOTH:
-                swing_v = STATE_AUTO
-            elif self.swing_mode == SWING_VERTICAL:
+            if self.swing_mode == SWING_BOTH or self.swing_mode == SWING_VERTICAL:
                 swing_v = STATE_AUTO
         else:
             swing_v = self._swingv
 
-        if self._swingh is None:
+        if self._swingh is None or SWING_BOTH in self._swing_list or SWING_HORIZONTAL in self._swing_list:
             swing_h = STATE_OFF
-            if self.swing_mode == SWING_BOTH:
-                swing_h = STATE_AUTO
-            elif self.swing_mode == SWING_HORIZONTAL:
+            if self.swing_mode == SWING_BOTH or self.swing_mode == SWING_HORIZONTAL:
                 swing_h = STATE_AUTO
         else:
             swing_h = self._swingh
