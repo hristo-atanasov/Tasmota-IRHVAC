@@ -1049,6 +1049,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
 
         # Populate the payload
         payload_data = {
+            "StateMode": "SendStore",
             "Vendor": self._vendor,
             "Model": self._model,
             "Power": self.power_mode,
