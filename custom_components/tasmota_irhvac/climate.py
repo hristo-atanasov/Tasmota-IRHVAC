@@ -35,6 +35,7 @@ from homeassistant.components.climate.const import (
     ATTR_PRESET_MODE,
     ATTR_FAN_MODE,
     ATTR_SWING_MODE,
+    ATTR_HVAC_MODE,
     HVAC_MODE_COOL,
     HVAC_MODE_HEAT,
     HVAC_MODE_OFF,
@@ -803,14 +804,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
 
     async def async_set_hvac_mode(self, hvac_mode):
         """Set hvac mode."""
-        if hvac_mode not in self._hvac_list or hvac_mode == HVAC_MODE_OFF:
-            self._hvac_mode = HVAC_MODE_OFF
-            self._enabled = False
-            self.power_mode = STATE_OFF
-        else:
-            self._hvac_mode = self._last_on_mode = hvac_mode
-            self._enabled = True
-            self.power_mode = STATE_ON
+        await self.set_mode(hvac_mode)
         # Ensure we update the current operation after changing the mode
         await self.async_send_cmd()
 
@@ -829,8 +823,13 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     async def async_set_temperature(self, **kwargs):
         """Set new target temperature."""
         temperature = kwargs.get(ATTR_TEMPERATURE)
+        hvac_mode = kwargs.get(ATTR_HVAC_MODE)
         if temperature is None:
             return
+
+        if hvac_mode is not None:
+            await self.set_mode(hvac_mode)
+
         self._target_temp = temperature
         if not self._hvac_mode.lower() == HVAC_MODE_OFF:
             self.power_mode = STATE_ON
@@ -1018,6 +1017,17 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             self._target_temp = self._saved_target_temp
         await self.hass.async_add_executor_job(self.send_ir)
         await self.async_update_ha_state()
+
+    async def set_mode(self, hvac_mode):
+        """Set hvac mode."""
+        if hvac_mode not in self._hvac_list or hvac_mode == HVAC_MODE_OFF:
+            self._hvac_mode = HVAC_MODE_OFF
+            self._enabled = False
+            self.power_mode = STATE_OFF
+        else:
+            self._hvac_mode = self._last_on_mode = hvac_mode
+            self._enabled = True
+            self.power_mode = STATE_ON
 
     def send_ir(self):
         """Send the payload to tasmota mqtt topic."""
