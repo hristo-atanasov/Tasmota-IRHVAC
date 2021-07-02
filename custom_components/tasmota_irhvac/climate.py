@@ -51,6 +51,7 @@ from homeassistant.const import (
     ATTR_ENTITY_ID,
     ATTR_TEMPERATURE,
     CONF_NAME,
+    CONF_UNIQUE_ID,
     EVENT_HOMEASSISTANT_START,
     PRECISION_HALVES,
     PRECISION_TENTHS,
@@ -235,6 +236,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_CLEAN, default=DEFAULT_CONF_CLEAN): cv.string,
         vol.Optional(CONF_BEEP, default=DEFAULT_CONF_BEEP): cv.string,
         vol.Optional(CONF_SLEEP, default=DEFAULT_CONF_SLEEP): cv.string,
+        vol.Optional(CONF_UNIQUE_ID): cv.string,
     }
 )
 
@@ -329,6 +331,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     clean = config[CONF_CLEAN]
     beep = config[CONF_BEEP]
     sleep = config[CONF_SLEEP]
+    unique_id = config.get(CONF_UNIQUE_ID)
 
     if DATA_KEY not in hass.data:
         hass.data[DATA_KEY] = {}
@@ -438,6 +441,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         clean,
         beep,
         sleep,
+        unique_id,
     ):
         """Initialize the thermostat."""
         self.topic = topic
@@ -465,6 +469,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._max_temp = max_temp
         self._target_temp = target_temp
         self._unit = hass.config.units.temperature_unit
+        self._unique_id = unique_id,
         self._support_flags = SUPPORT_FLAGS
         if away_temp is not None:
             self._support_flags = SUPPORT_FLAGS | SUPPORT_PRESET_MODE
@@ -672,6 +677,11 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
     def name(self):
         """Return the name of the thermostat."""
         return self._name
+
+    @property
+    def unique_id(self):
+        """Return the unique id of this thermostat."""
+        return self._unique_id
 
     @property
     def precision(self):

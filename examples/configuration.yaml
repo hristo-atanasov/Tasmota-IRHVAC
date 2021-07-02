@@ -1,6 +1,7 @@
 climate:
   - platform: tasmota_irhvac
     name: "Some Name Here"
+    unique_id: climate.tasmota_irhvac
     command_topic: "cmnd/your_tasmota_device/irhvac"
     # Pick one of the following:
     # State is updated when the tasmota device receives an IR signal (includes own transmission and original remote)
