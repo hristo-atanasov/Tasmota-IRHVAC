@@ -370,6 +370,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         clean,
         beep,
         sleep,
+        unique_id,
     )
     uuidstr = uuid.uuid4().hex
     hass.data[DATA_KEY][uuidstr] = tasmotaIrhvac
