@@ -635,6 +635,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                 # Set default state to off
                 if self.power_mode == STATE_OFF:
                     self._enabled = False
+                    self._hvac_mode = self.power_mode
                 else:
                     self._enabled = True
 
