@@ -92,6 +92,7 @@ from .const import (
     HVAC_MODE_DRY,
     HVAC_MODE_FAN_ONLY,
     HVAC_MODES,
+    CONF_UNIQUE_ID,
     CONF_EXCLUSIVE_GROUP_VENDOR,
     CONF_VENDOR,
     CONF_PROTOCOL,
@@ -172,6 +173,7 @@ SUPPORT_FLAGS = (
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_NAME, default=DEFAULT_NAME): cv.string,
+        vol.Optional(CONF_UNIQUE_ID): cv.string,
         vol.Exclusive(CONF_VENDOR, CONF_EXCLUSIVE_GROUP_VENDOR): cv.string,
         vol.Exclusive(CONF_PROTOCOL, CONF_EXCLUSIVE_GROUP_VENDOR): cv.string,
         vol.Required(
@@ -305,6 +307,7 @@ SERVICE_TO_METHOD = {
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the generic thermostat platform."""
     name = config.get(CONF_NAME)
+    unique_id = config.get(CONF_UNIQUE_ID)
     topic = config.get(CONF_COMMAND_TOPIC)
     vendor = config.get(CONF_VENDOR)
     protocol = config.get(CONF_PROTOCOL)
@@ -346,6 +349,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         topic,
         vendor,
         name,
+        unique_id,
         sensor_entity_id,
         state_topic,
         min_temp,
@@ -417,6 +421,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         topic,
         vendor,
         name,
+        unique_id,
         sensor_entity_id,
         state_topic,
         min_temp,
@@ -444,6 +449,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self.hass = hass
         self._vendor = vendor
         self._name = name
+        self._unique_id = unique_id
         self.sensor_entity_id = sensor_entity_id
         self.state_topic = state_topic
         self._hvac_mode = initial_operation_mode
@@ -672,6 +678,11 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
     def name(self):
         """Return the name of the thermostat."""
         return self._name
+
+    @property
+    def unique_id(self):
+        """Return the unique_id of the thermostat."""
+        return self._unique_id
 
     @property
     def precision(self):
