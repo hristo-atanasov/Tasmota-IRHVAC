@@ -42,12 +42,12 @@ climate:
       #- diffuse
       - "min"
       - "max"
-      #- auto
+      #- "auto"
     supported_swing_list:
       - "off"
       - "vertical" #up to down
-      # - horizontal # Left to right
-      # - both
+      # - "horizontal" # Left to right
+      # - "both"
     default_quiet_mode: "Off" #optional - default "Off" string value
     default_turbo_mode: "Off" #optional - default "Off" string value
     default_econo_mode: "Off" #optional - default "Off" string value
