@@ -99,6 +99,7 @@ from .const import (
     CONF_COMMAND_TOPIC,
     CONF_STATE_TOPIC,
     CONF_TEMP_SENSOR,
+    CONF_HUM_SENSOR,
     CONF_MIN_TEMP,
     CONF_MAX_TEMP,
     CONF_TARGET_TEMP,
@@ -180,6 +181,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
             CONF_COMMAND_TOPIC, default=DEFAULT_COMMAND_TOPIC
         ): mqtt.valid_publish_topic,
         vol.Required(CONF_TEMP_SENSOR): cv.entity_id,
+        vol.Optional(CONF_HUM_SENSOR): cv.entity_id,
         vol.Optional(
             CONF_STATE_TOPIC, default=DEFAULT_STATE_TOPIC
         ): mqtt.valid_subscribe_topic,
@@ -312,6 +314,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     vendor = config.get(CONF_VENDOR)
     protocol = config.get(CONF_PROTOCOL)
     sensor_entity_id = config.get(CONF_TEMP_SENSOR)
+    sensor_hum_entity_id = config.get(CONF_HUM_SENSOR)
     state_topic = config[CONF_STATE_TOPIC]
     min_temp = config[CONF_MIN_TEMP]
     max_temp = config[CONF_MAX_TEMP]
@@ -351,6 +354,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         name,
         unique_id,
         sensor_entity_id,
+        sensor_hum_entity_id,
         state_topic,
         min_temp,
         max_temp,
@@ -423,6 +427,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         name,
         unique_id,
         sensor_entity_id,
+        sensor_hum_entity_id,
         state_topic,
         min_temp,
         max_temp,
@@ -451,6 +456,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._name = name
         self._unique_id = unique_id
         self.sensor_entity_id = sensor_entity_id
+        self.sensor_hum_entity_id = sensor_hum_entity_id
         self.state_topic = state_topic
         self._hvac_mode = initial_operation_mode
         self._saved_target_temp = target_temp or away_temp
@@ -467,6 +473,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             self._enabled = True
         self._active = False
         self._cur_temp = None
+        self._cur_hum = None
         self._min_temp = min_temp
         self._max_temp = max_temp
         self._target_temp = target_temp
@@ -503,6 +510,10 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         async_track_state_change(
             self.hass, self.sensor_entity_id, self._async_sensor_changed
         )
+        if self.sensor_hum_entity_id is not None:
+            async_track_state_change(
+                self.hass, self.sensor_hum_entity_id, self._async_sensor_changed
+            )
         await self._subscribe_topics()
 
         @callback
@@ -511,6 +522,11 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             sensor_state = self.hass.states.get(self.sensor_entity_id)
             if sensor_state and sensor_state.state != STATE_UNKNOWN:
                 self._async_update_temp(sensor_state)
+
+            if self.sensor_hum_entity_id is not None:
+                sensor_hum_state = self.hass.states.get(self.sensor_hum_entity_id)
+                if sensor_hum_state and sensor_hum_state.state != STATE_UNKNOWN:
+                    self._async_update_hum(sensor_hum_state)                
 
         self.hass.bus.async_listen_once(
             EVENT_HOMEASSISTANT_START, _async_startup)
@@ -706,6 +722,11 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
     def current_temperature(self):
         """Return the sensor temperature."""
         return self._cur_temp
+
+    @property
+    def current_humidity(self):
+        """Return the sensor humidity."""
+        return self._cur_hum
 
     @property
     def hvac_mode(self):
@@ -933,11 +954,15 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         return super().max_temp
 
     async def _async_sensor_changed(self, entity_id, old_state, new_state):
-        """Handle temperature changes."""
+        """Handle temperature/humidity changes."""
         if new_state is None:
             return
 
-        self._async_update_temp(new_state)
+        if entity_id == self.sensor_entity_id:
+            self._async_update_temp(new_state)
+        if entity_id == self.sensor_hum_entity_id:
+            self._async_update_hum(new_state)
+
         await self.async_update_ha_state()
 
     @callback
@@ -945,6 +970,14 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         """Update thermostat with latest state from sensor."""
         try:
             self._cur_temp = float(state.state)
+        except ValueError as ex:
+            _LOGGER.debug("Unable to update from sensor: %s", ex)
+
+    @callback
+    def _async_update_hum(self, state):
+        """Update thermostat with latest state from sensor."""
+        try:
+            self._cur_hum = float(state.state)
         except ValueError as ex:
             _LOGGER.debug("Unable to update from sensor: %s", ex)
 
