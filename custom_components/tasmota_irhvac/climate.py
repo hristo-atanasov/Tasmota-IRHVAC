@@ -118,6 +118,7 @@ from .const import (
     CONF_CLEAN,
     CONF_BEEP,
     CONF_SLEEP,
+    CONF_DAIKIN_TOGGLE,
     DATA_KEY,
     DOMAIN,
     DEFAULT_NAME,
@@ -139,6 +140,7 @@ from .const import (
     DEFAULT_CONF_CLEAN,
     DEFAULT_CONF_BEEP,
     DEFAULT_CONF_SLEEP,
+    DEFAULT_CONF_DAIKIN_TOGGLE,
     ON_OFF_LIST,
     SERVICE_ECONO_MODE,
     SERVICE_TURBO_MODE,
@@ -237,6 +239,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_CLEAN, default=DEFAULT_CONF_CLEAN): cv.string,
         vol.Optional(CONF_BEEP, default=DEFAULT_CONF_BEEP): cv.string,
         vol.Optional(CONF_SLEEP, default=DEFAULT_CONF_SLEEP): cv.string,
+        vol.Optional(CONF_DAIKIN_TOGGLE, default=DEFAULT_CONF_DAIKIN_TOGGLE): cv.boolean,
     }
 )
 
@@ -332,6 +335,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     clean = config[CONF_CLEAN]
     beep = config[CONF_BEEP]
     sleep = config[CONF_SLEEP]
+    daikin_toggle = config[CONF_DAIKIN_TOGGLE]
 
     if DATA_KEY not in hass.data:
         hass.data[DATA_KEY] = {}
@@ -371,6 +375,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         clean,
         beep,
         sleep,
+        daikin_toggle,
     )
     uuidstr = uuid.uuid4().hex
     hass.data[DATA_KEY][uuidstr] = tasmotaIrhvac
@@ -443,6 +448,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         clean,
         beep,
         sleep,
+        daikin_toggle,
     ):
         """Initialize the thermostat."""
         self.topic = topic
@@ -462,6 +468,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._swing_mode = swing_list[0]
         self._enabled = False
         self.power_mode = STATE_OFF
+        self._daikin_toggle = daikin_toggle
         if initial_operation_mode is not STATE_OFF:
             self.power_mode = STATE_ON
             self._enabled = True
@@ -794,13 +801,20 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
     async def async_set_hvac_mode(self, hvac_mode):
         """Set hvac mode."""
         if hvac_mode not in self._hvac_list or hvac_mode == HVAC_MODE_OFF:
-            self._hvac_mode = HVAC_MODE_OFF
             self._enabled = False
-            self.power_mode = STATE_OFF
+            if not self._daikin_toggle:
+                self.power_mode = STATE_OFF
+                self._hvac_mode = HVAC_MODE_OFF
+            else:
+                self.power_mode = STATE_ON
         else:
             self._hvac_mode = hvac_mode
             self._enabled = True
-            self.power_mode = STATE_ON
+
+            if not self._daikin_toggle:
+                self.power_mode = STATE_ON
+            else:
+                self.power_mode = STATE_OFF
         # Ensure we update the current operation after changing the mode
         await self.async_send_cmd(False)
 
@@ -811,8 +825,13 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
 
     async def async_turn_off(self):
         """Turn thermostat off."""
-        self._hvac_mode = STATE_OFF
-        self.power_mode = STATE_OFF
+        self._hvac_mode = HVAC_MODE_OFF
+
+        if not self._daikin_toggle:
+            self.power_mode = STATE_OFF
+        else:
+            self.power_mode = STATE_ON
+
         await self.async_send_cmd(False)
 
     async def async_set_temperature(self, **kwargs):
@@ -821,7 +840,12 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         if temperature is None:
             return
         self._target_temp = temperature
-        self.power_mode = STATE_ON
+
+        if not self._daikin_toggle:
+            self.power_mode = STATE_ON
+        else:
+            self.power_mode = STATE_OFF
+
         await self.async_send_cmd(False)
 
     async def async_set_fan_mode(self, fan_mode):
@@ -833,7 +857,12 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             _LOGGER.error(self._fan_list)
             return
         self._fan_mode = fan_mode
-        self.power_mode = STATE_ON
+
+        if not self._daikin_toggle:
+            self.power_mode = STATE_ON
+        else:
+            self.power_mode = STATE_OFF
+
         await self.async_send_cmd(False)
 
     async def async_set_swing_mode(self, swing_mode):
@@ -845,7 +874,12 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             _LOGGER.error(self._swing_list)
             return
         self._swing_mode = swing_mode
-        self.power_mode = STATE_ON
+
+        if not self._daikin_toggle:
+            self.power_mode = STATE_ON
+        else:
+            self.power_mode = STATE_OFF
+
         await self.async_send_cmd(False)
 
     async def async_set_econo(self, econo):
