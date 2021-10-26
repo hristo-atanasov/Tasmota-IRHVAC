@@ -568,7 +568,13 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             if payload["Vendor"] == self._vendor:
                 # All values in the payload are Optional
                 if "Power" in payload:
-                    self.power_mode = payload["Power"].lower()
+                    if self._daikin_toggle and payload["Power"].lower() == "on":
+                        if self.power_mode == STATE_OFF:
+                            self.power_mode = STATE_ON
+                        else:
+                            self.power_mode = STATE_OFF
+                    else:
+                        self.power_mode = payload["Power"].lower()
                 if "Mode" in payload:
                     self._hvac_mode = payload["Mode"].lower()
                 if "Temp" in payload:
