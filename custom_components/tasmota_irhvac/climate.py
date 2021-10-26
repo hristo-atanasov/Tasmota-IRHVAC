@@ -802,19 +802,21 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         """Set hvac mode."""
         if hvac_mode not in self._hvac_list or hvac_mode == HVAC_MODE_OFF:
             self._enabled = False
-            if not self._daikin_toggle:
-                self.power_mode = STATE_OFF
-                self._hvac_mode = HVAC_MODE_OFF
-            else:
-                self.power_mode = STATE_ON
+            self._hvac_mode = HVAC_MODE_OFF
+
+            if self._daikin_toggle and not self.power_mode == STATE_OFF: # Current state is on, so turn off. Do nothing if already off
+                self.send_power_ir(STATE_ON)
+
+            self.power_mode = STATE_OFF
+
         else:
             self._hvac_mode = hvac_mode
             self._enabled = True
 
-            if not self._daikin_toggle:
-                self.power_mode = STATE_ON
-            else:
-                self.power_mode = STATE_OFF
+            if self._daikin_toggle and self.power_mode == STATE_OFF: # Current state is off, so turn on. Do nothing if already on
+                self.send_power_ir(STATE_ON)
+
+            self.power_mode = STATE_ON
         # Ensure we update the current operation after changing the mode
         await self.async_send_cmd(False)
 
@@ -827,10 +829,10 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         """Turn thermostat off."""
         self._hvac_mode = HVAC_MODE_OFF
 
-        if not self._daikin_toggle:
-            self.power_mode = STATE_OFF
-        else:
-            self.power_mode = STATE_ON
+        if self._daikin_toggle and not self.power_mode == STATE_OFF:
+            self.send_power_ir(STATE_ON)
+
+        self.power_mode = STATE_OFF
 
         await self.async_send_cmd(False)
 
@@ -840,11 +842,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         if temperature is None:
             return
         self._target_temp = temperature
-
-        if not self._daikin_toggle:
-            self.power_mode = STATE_ON
-        else:
-            self.power_mode = STATE_OFF
+        self.power_mode = STATE_ON
 
         await self.async_send_cmd(False)
 
@@ -857,11 +855,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             _LOGGER.error(self._fan_list)
             return
         self._fan_mode = fan_mode
-
-        if not self._daikin_toggle:
-            self.power_mode = STATE_ON
-        else:
-            self.power_mode = STATE_OFF
+        self.power_mode = STATE_ON
 
         await self.async_send_cmd(False)
 
@@ -875,10 +869,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             return
         self._swing_mode = swing_mode
 
-        if not self._daikin_toggle:
-            self.power_mode = STATE_ON
-        else:
-            self.power_mode = STATE_OFF
+        self.power_mode = STATE_ON
 
         await self.async_send_cmd(False)
 
@@ -1047,6 +1038,24 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             "Beep": self._beep,
             "Sleep": self._sleep
         }
+
+        if self._daikin_toggle:
+            payload_data["Power"] = "off" # ignore power payload
+
         payload = (json.dumps(payload_data))
+
+        # Publish mqtt message
+        mqtt.async_publish(self.hass, self.topic, payload)
+
+    def send_power_ir(self, power_mode):
+        # send power mode only
+        payload_data = {
+            "Vendor": self._vendor,
+            "Model": self._model,
+            "Power": power_mode
+        }
+
+        payload = (json.dumps(payload_data))
+
         # Publish mqtt message
         mqtt.async_publish(self.hass, self.topic, payload)
