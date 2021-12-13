@@ -939,7 +939,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 await self.async_update_ha_state()
 
     async def async_send_cmd(self):
-        await self.hass.async_add_executor_job(self.send_ir)
+        await self.send_ir()
         await self.async_update_ha_state()
 
     @property
@@ -1015,7 +1015,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         elif preset_mode == PRESET_NONE and self._is_away:
             self._is_away = False
             self._target_temp = self._saved_target_temp
-        await self.hass.async_add_executor_job(self.send_ir)
+        await self.send_ir()
         await self.async_update_ha_state()
 
     async def set_mode(self, hvac_mode):
@@ -1029,7 +1029,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             self._enabled = True
             self.power_mode = STATE_ON
 
-    def send_ir(self):
+    async def send_ir(self):
         """Send the payload to tasmota mqtt topic."""
         fan_speed = self.fan_mode
         # tweak for some ELECTRA_AC devices
@@ -1082,4 +1082,4 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         }
         payload = (json.dumps(payload_data))
         # Publish mqtt message
-        mqtt.async_publish(self.hass, self.topic, payload)
+        await mqtt.async_publish(self.hass, self.topic, payload)
