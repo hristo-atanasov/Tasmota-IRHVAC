@@ -1,7 +1,7 @@
 {
   "domain": "tasmota_irhvac",
   "name": "Tasmota Irhvac",
-  "version": "2021.5.30",
+  "version": "2021.12.0",
   "documentation": "https://github.com/hristo-atanasov/Tasmota-IRHVAC",
   "issue_tracker": "https://github.com/hristo-atanasov/Tasmota-IRHVAC/issues",
   "requirements": [],
@@ -10,6 +10,7 @@
     "sensor"
   ],
   "codeowners": [
-    "@hristo-atanasov"
+    "@hristo-atanasov",
+    "@nao-pon"
   ]
 }
