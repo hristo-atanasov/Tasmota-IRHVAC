@@ -58,8 +58,6 @@ HVAC_MODES = [
     HVAC_MODE_FAN_AUTO,
 ]
 
-CONF_UNIQUE_ID = "unique_id"
-
 # Platform specific config entry names
 CONF_EXCLUSIVE_GROUP_VENDOR = "exclusive_group_vendor"
 CONF_VENDOR = "vendor"
@@ -67,12 +65,15 @@ CONF_PROTOCOL = "protocol"  # Soon to be deprecated
 CONF_COMMAND_TOPIC = "command_topic"
 CONF_STATE_TOPIC = "state_topic"
 CONF_TEMP_SENSOR = "temperature_sensor"
+CONF_HUMIDITY_SENSOR = "humidity_sensor"
+CONF_POWER_SENSOR = "power_sensor"
 CONF_MIN_TEMP = "min_temp"
 CONF_MAX_TEMP = "max_temp"
 CONF_TARGET_TEMP = "target_temp"
 CONF_INITIAL_OPERATION_MODE = "initial_operation_mode"
 CONF_AWAY_TEMP = "away_temp"
 CONF_PRECISION = "precision"
+CONF_TEMP_STEP = "temp_step"
 CONF_MODES_LIST = "supported_modes"
 CONF_FAN_LIST = "supported_fan_speeds"
 CONF_SWING_LIST = "supported_swing_list"
@@ -86,6 +87,9 @@ CONF_FILTER = "default_filter_mode"
 CONF_CLEAN = "default_clean_mode"
 CONF_BEEP = "default_beep_mode"
 CONF_SLEEP = "default_sleep_mode"
+CONF_KEEP_MODE = "keep_mode_when_off"
+CONF_SWINGV = "default_swingv"
+CONF_SWINGH = "default_swingh"
 
 # Platform specific default values
 DEFAULT_NAME = "IR AirConditioner"
@@ -95,7 +99,6 @@ DEFAULT_TARGET_TEMP = 26
 DEFAULT_MIN_TEMP = 16
 DEFAULT_MAX_TEMP = 32
 DEFAULT_PRECISION = 1
-DEFAULT_AWAY_TEMP = 24
 DEFAULT_FAN_LIST = [HVAC_FAN_AUTO_MAX,
                     HVAC_FAN_MAX_HIGH, HVAC_FAN_MEDIUM, HVAC_FAN_MIN]
 DEFAULT_CONF_QUIET = "off"
@@ -108,6 +111,7 @@ DEFAULT_CONF_FILTER = "off"
 DEFAULT_CONF_CLEAN = "off"
 DEFAULT_CONF_BEEP = "off"
 DEFAULT_CONF_SLEEP = "-1"
+DEFAULT_CONF_KEEP_MODE = False
 
 ATTR_NAME = "name"
 ATTR_VALUE = "value"
@@ -123,6 +127,9 @@ ATTR_FILTERS = 'filters'
 ATTR_CLEAN = 'clean'
 ATTR_BEEP = 'beep'
 ATTR_SLEEP = 'sleep'
+ATTR_LAST_ON_MODE = 'last_on_mode'
+ATTR_SWINGV = 'swingv'
+ATTR_SWINGH = 'swingh'
 
 SERVICE_ECONO_MODE = 'set_econo'
 SERVICE_TURBO_MODE = 'set_turbo'
@@ -143,7 +150,9 @@ ATTRIBUTES_IRHVAC = {
     ATTR_CLEAN: 'clean',
     ATTR_BEEP: 'beep',
     ATTR_SLEEP: 'sleep',
-
+    ATTR_LAST_ON_MODE: 'last_on_mode',
+    ATTR_SWINGV: 'swingv',
+    ATTR_SWINGH: 'swingh',
 }
 
 ON_OFF_LIST = [
