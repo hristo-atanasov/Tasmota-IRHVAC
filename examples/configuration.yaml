@@ -25,21 +25,21 @@ climate:
       - "off" #Turns the AC off - Should be in quotes
       # Some devices have "auto" and "fan_only" switched
       # If the following two lines are uncommented, "auto" and "fan" shoud be commented out
-      #- auto_fan_only #if remote shows fan but tasmota says auto
-      #- fan_only_auto #if remote shows auto but tasmota says fan
+      #- "auto_fan_only" #if remote shows fan but tasmota says auto
+      #- "fan_only_auto" #if remote shows auto but tasmota says fan
     supported_fan_speeds:
       # Some devices say max,but it is high, and auto which is max
       # If you uncomment the following two, you have to comment high and max
-      # - auto_max #woud become max
-      # - max_high #would become high
-      #- on
-      #- off
-      #- low
+      # - "auto_max" #woud become max
+      # - "max_high" #would become high
+      #- "on"
+      #- "off"
+      #- "low"
       - "medium"
       - "high"
-      #- middle
-      #- focus
-      #- diffuse
+      #- "middle"
+      #- "focus"
+      #- "diffuse"
       - "min"
       - "max"
       #- "auto"
