@@ -768,7 +768,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
 
         Requires SUPPORT_FAN_MODE.
         """
-        # tweek for some ELECTRA_AC devices
+        # tweak for some ELECTRA_AC devices
         if HVAC_FAN_MAX_HIGH in self._fan_list and HVAC_FAN_AUTO_MAX in self._fan_list:
             new_fan_list = []
             for val in self._fan_list:
@@ -838,11 +838,20 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     async def async_set_fan_mode(self, fan_mode):
         """Set new target fan mode."""
         if fan_mode not in self._fan_list:
-            _LOGGER.error(
-                "Invalid swing mode selected. Got '%s'. Allowed modes are:", fan_mode
-            )
-            _LOGGER.error(self._fan_list)
-            return
+            #tweak for some ELECTRA_AC devices
+            if HVAC_FAN_MAX_HIGH in self._fan_list and HVAC_FAN_AUTO_MAX in self._fan_list:
+                if fan_mode != FAN_HIGH and fan_mode != HVAC_FAN_MAX:
+                    _LOGGER.error(
+                        "Invalid swing mode selected. Got '%s'. Allowed modes are:", fan_mode
+                    )
+                    _LOGGER.error(self._fan_list)
+                    return
+            else:
+                _LOGGER.error(
+                    "Invalid swing mode selected. Got '%s'. Allowed modes are:", fan_mode
+                )
+                _LOGGER.error(self._fan_list)
+                return
         self._fan_mode = fan_mode
         if not self._hvac_mode.lower() == HVAC_MODE_OFF:
             self.power_mode = STATE_ON
