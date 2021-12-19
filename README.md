@@ -1,36 +1,9 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
 # Tasmota-IRHVAC
-
-## The function is enhanced based on the source
-
-It is an extension based on [hristo-atanasov/Tasmota-IRHVAC](https://github.com/hristo-atanasov/Tasmota-IRHVAC).
-
-1. Added options
-
-```yaml
-unique_id: kitchen_ac #optional - unique id for the HomeAssistant
-humidity_sensor: sensor.kitchen_humidity #optional - humidity sensor
-power_sensor: binary_sensor.kitchen_ac_power #optional - power sensor (on/off)
-default_swingv: "Off" #optional - default None string value
-default_swingh: "Off" #optional - default None string value
-```
-
-2. Support MQTT availability feature via "LWT"
-
-3. Supports swingV and swingH (Holds the information obtained from the IR remote control.)
-
-4. Supports Mitsubishi air conditioner weekly timers and older models of Panasonic air conditioners.
-    However, you need a customized Tasmota farm. You can get it from the link below.
-      - https://github.com/nao-pon/Tasmota/tree/irremote_full_custom
-      - http://hypweb.net/tasmota/firmware/ir_jema_bridge.bin.gz
-      - http://hypweb.net/tasmota/firmware/ir_jema_bridge_ccs811.bin.gz (Enable)
-
-## Description of the source
-
 Home Assistant platform for controlling IR Air Conditioners via Tasmota IRHVAC command and compatible harware
 
-This is my new platform, that can **control hunderds of Air Conditioners**, out of the box, via **Tasmota IR transceivers**. It is based on the latest ***“tasmota-ircustom.bin” v9.3***. Currently it **works on Home Assistant 0.94 (may be some newer too) and the latest core-2021.4.0 at this time**
-The schematics to make such Tasmota IR Transceiver is shown on the picture. I recommend use less than 40ohm to put this 100ohm resistor that is marked with light blue X. If you’re planning to power the board with microUSB and you have pin named *VU* connect the IRLED to it instead of *VIN*.
+This is my new platform, that can **control hunderds of Air Conditioners**, out of the box, via **Tasmota IR transceivers**. It is based on the latest ***“tasmota-ircustom.bin” v8.1*** (tested successfully with Tasmota-ir v10.0.0). Currently it **works on Home Assistant 0.94 (may be some newer too) and from 0.103.x right to the latest 0.110.0 at this time** (Tested successfully with Home Assistant 2021.12.2)
+The schematics to make such Tasmota IR Transceiver is shown on the picture. I recommend not to put this 100ohm resistor that is marked with light blue X. If you’re planning to power the board with microUSB and you have pin named *VU* connect the IRLED to it instead of *VIN*.
 
 ![image1](/images/schematics.jpeg)
 

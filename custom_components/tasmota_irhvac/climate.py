@@ -189,6 +189,7 @@ SUPPORT_FLAGS = (
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_NAME, default=DEFAULT_NAME): cv.string,
+        vol.Optional(CONF_UNIQUE_ID): cv.string,
         vol.Exclusive(CONF_VENDOR, CONF_EXCLUSIVE_GROUP_VENDOR): cv.string,
         vol.Exclusive(CONF_PROTOCOL, CONF_EXCLUSIVE_GROUP_VENDOR): cv.string,
         vol.Required(
@@ -197,7 +198,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_TEMP_SENSOR): cv.entity_id,
         vol.Optional(CONF_HUMIDITY_SENSOR): cv.entity_id,
         vol.Optional(CONF_POWER_SENSOR): cv.entity_id,
-        vol.Optional(CONF_UNIQUE_ID): cv.string,
         vol.Optional(
             CONF_STATE_TOPIC, default=DEFAULT_STATE_TOPIC
         ): mqtt.valid_subscribe_topic,
@@ -666,12 +666,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         await MqttAvailability.async_will_remove_from_hass(self)
 
     @property
-    def unique_id(self):
-        """Return a unique ID."""
-        return self._unique_id
-
-    @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         """Return the state attributes of the device."""
         return {attribute: getattr(self, '_' + attribute)
              for attribute in ATTRIBUTES_IRHVAC}
@@ -685,6 +680,11 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     def name(self):
         """Return the name of the thermostat."""
         return self._name
+
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        return self._unique_id
 
     @property
     def precision(self):
@@ -768,7 +768,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
 
         Requires SUPPORT_FAN_MODE.
         """
-        # tweek for some ELECTRA_AC devices
+        # tweak for some ELECTRA_AC devices
         if HVAC_FAN_MAX_HIGH in self._fan_list and HVAC_FAN_AUTO_MAX in self._fan_list:
             new_fan_list = []
             for val in self._fan_list:
@@ -838,11 +838,20 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     async def async_set_fan_mode(self, fan_mode):
         """Set new target fan mode."""
         if fan_mode not in self._fan_list:
-            _LOGGER.error(
-                "Invalid swing mode selected. Got '%s'. Allowed modes are:", fan_mode
-            )
-            _LOGGER.error(self._fan_list)
-            return
+            #tweak for some ELECTRA_AC devices
+            if HVAC_FAN_MAX_HIGH in self._fan_list and HVAC_FAN_AUTO_MAX in self._fan_list:
+                if fan_mode != FAN_HIGH and fan_mode != HVAC_FAN_MAX:
+                    _LOGGER.error(
+                        "Invalid swing mode selected. Got '%s'. Allowed modes are:", fan_mode
+                    )
+                    _LOGGER.error(self._fan_list)
+                    return
+            else:
+                _LOGGER.error(
+                    "Invalid swing mode selected. Got '%s'. Allowed modes are:", fan_mode
+                )
+                _LOGGER.error(self._fan_list)
+                return
         self._fan_mode = fan_mode
         if not self._hvac_mode.lower() == HVAC_MODE_OFF:
             self.power_mode = STATE_ON

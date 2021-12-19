@@ -1,7 +1,6 @@
 climate:
   - platform: tasmota_irhvac
     name: "Some Name Here"
-    unique_id: kitchen_ac #optional - unique id for the HomeAssistant
     command_topic: "cmnd/your_tasmota_device/irhvac"
     # Pick one of the following:
     # State is updated when the tasmota device receives an IR signal (includes own transmission and original remote)
@@ -10,8 +9,6 @@ climate:
     # State is updated when the tasmota device completes IR transmissionm, should be pretty reliable.
     state_topic: "stat/your_tasmota_device/RESULT"
     temperature_sensor: sensor.kitchen_temperature
-    humidity_sensor: sensor.kitchen_humidity #optional - humidity sensor
-    power_sensor: binary_sensor.kitchen_ac_power #optional - power sensor (on/off)
     vendor: "ELECTRA_AC"
     min_temp: 16 #optional - default 16 int value
     max_temp: 32 #optional - default 32 int value
@@ -19,7 +16,6 @@ climate:
     initial_operation_mode: "off" # optional - default "off" string value (one of the "supported_modes")
     away_temp: 24 #optional - default 24 int value
     precision: 1 #optional - default 1 int or float value. Can be set to 1, 0.5 or 0.1
-    temp_step: 1 #optional - default 1 int or float value. Can be set to 1, 0.5
     supported_modes:
       - "heat"
       - "cool"
@@ -29,29 +25,29 @@ climate:
       - "off" #Turns the AC off - Should be in quotes
       # Some devices have "auto" and "fan_only" switched
       # If the following two lines are uncommented, "auto" and "fan" shoud be commented out
-      #- auto_fan_only #if remote shows fan but tasmota says auto
-      #- fan_only_auto #if remote shows auto but tasmota says fan
+      #- "auto_fan_only" #if remote shows fan but tasmota says auto
+      #- "fan_only_auto" #if remote shows auto but tasmota says fan
     supported_fan_speeds:
       # Some devices say max,but it is high, and auto which is max
       # If you uncomment the following two, you have to comment high and max
-      # - auto_max #woud become max
-      # - max_high #would become high
-      #- on
-      #- off
-      #- low
+      # - "auto_max" #woud become max
+      # - "max_high" #would become high
+      #- "on"
+      #- "off"
+      #- "low"
       - "medium"
       - "high"
-      #- middle
-      #- focus
-      #- diffuse
+      #- "middle"
+      #- "focus"
+      #- "diffuse"
       - "min"
       - "max"
-      #- auto
+      #- "auto"
     supported_swing_list:
       - "off"
       - "vertical" #up to down
-      # - horizontal # Left to right
-      # - both
+      # - "horizontal" # Left to right
+      # - "both"
     default_quiet_mode: "Off" #optional - default "Off" string value
     default_turbo_mode: "Off" #optional - default "Off" string value
     default_econo_mode: "Off" #optional - default "Off" string value
@@ -62,5 +58,3 @@ climate:
     default_clean_mode: "Off" #optional - default "Off" string value
     default_beep_mode: "Off" #optional - default "Off" string value
     default_sleep_mode: "-1" #optional - default "-1" string value
-    default_swingv: "Off" #optional - default None string value
-    default_swingh: "Off" #optional - default None string value
