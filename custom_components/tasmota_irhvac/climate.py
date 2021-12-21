@@ -11,6 +11,7 @@ from homeassistant.components import mqtt
 from homeassistant.components.mqtt.mixins import (
     MqttAvailability,
     MQTT_AVAILABILITY_SCHEMA,
+    CONF_AVAILABILITY_TOPIC,
 )
 from homeassistant.components.climate import PLATFORM_SCHEMA
 try:
@@ -195,6 +196,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Required(
             CONF_COMMAND_TOPIC, default=DEFAULT_COMMAND_TOPIC
         ): mqtt.valid_publish_topic,
+        vol.Optional(CONF_AVAILABILITY_TOPIC): mqtt.util.valid_topic,
         vol.Optional(CONF_TEMP_SENSOR): cv.entity_id,
         vol.Optional(CONF_HUMIDITY_SENSOR): cv.entity_id,
         vol.Optional(CONF_POWER_SENSOR): cv.entity_id,
@@ -455,10 +457,14 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._swingv = config.get(CONF_SWINGV)
         self._swingh = config.get(CONF_SWINGH)
 
-        path = self.topic.split('/')
+        availability_topic = config.get(CONF_AVAILABILITY_TOPIC)
+        if (availability_topic) is None:
+            path = self.topic.split('/')
+            availability_topic = "tele/" + path[1] + "/LWT"
+
         mqtt_availability_config = config
         mqtt_availability_config.update({
-            "availability_topic": "tele/" + path[1] + "/LWT",
+            CONF_AVAILABILITY_TOPIC: availability_topic,
             "payload_available": "Online",
             "payload_not_available": "Offline",
         })
