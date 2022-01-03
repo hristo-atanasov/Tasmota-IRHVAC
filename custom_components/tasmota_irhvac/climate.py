@@ -522,7 +522,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
 
             temp_sensor_state = self.hass.states.get(self._temp_sensor)
             if temp_sensor_state and temp_sensor_state.state != STATE_UNKNOWN and temp_sensor_state.state != STATE_UNAVAILABLE:
-                self._async_update_temp(temp_sensor_state.state)
+                self._async_update_temp(temp_sensor_state)
 
 
         if self._humidity_sensor:
