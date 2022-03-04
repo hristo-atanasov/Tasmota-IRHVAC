@@ -652,7 +652,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                     state = self.hass.states.get(self._power_sensor)
                     await self._async_power_sensor_changed(self._power_sensor, None, state)
 
-        self._sub_state = await mqtt.subscription.async_subscribe_topics(
+        self._sub_state = await mqtt.subscription.async_prepare_subscribe_topics(
             self.hass,
             self._sub_state,
             {
