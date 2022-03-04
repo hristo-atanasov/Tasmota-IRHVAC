@@ -666,7 +666,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             )
 
             await mqtt.subscription.async_subscribe_topics(self.hass, self._sub_state)
-
+        else:
             self._sub_state = await mqtt.subscription.async_subscribe_topics(
                 self.hass,
                 self._sub_state,
