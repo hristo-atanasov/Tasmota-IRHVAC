@@ -652,34 +652,30 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                     state = self.hass.states.get(self._power_sensor)
                     await self._async_power_sensor_changed(self._power_sensor, None, state)
 
+        topics = {
+                    CONF_STATE_TOPIC: {
+                        "topic": self.state_topic,
+                        "msg_callback": state_message_received,
+                        "qos": 1,
+                    }
+                }
+
         if hasattr(mqtt.subscription, 'async_prepare_subscribe_topics'):
+            # for HA Core >= 2022.3.0
             self._sub_state = mqtt.subscription.async_prepare_subscribe_topics(
                 self.hass,
                 self._sub_state,
-                {
-                    CONF_STATE_TOPIC: {
-                        "topic": self.state_topic,
-                        "msg_callback": state_message_received,
-                        "qos": 1,
-                    }
-                },
+                topics,
             )
 
-            self._sub_state = await mqtt.subscription.async_subscribe_topics(
-                self.hass,
-                self._sub_state
-            )
+            await mqtt.subscription.async_subscribe_topics(self.hass, self._sub_state)
+
         else:
+            # for HA Core < 2022.3.0
             self._sub_state = await mqtt.subscription.async_subscribe_topics(
                 self.hass,
                 self._sub_state,
-                {
-                    CONF_STATE_TOPIC: {
-                        "topic": self.state_topic,
-                        "msg_callback": state_message_received,
-                        "qos": 1,
-                    }
-                },
+                topics,
             )
 
     async def async_will_remove_from_hass(self):
