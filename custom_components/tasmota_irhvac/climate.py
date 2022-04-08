@@ -562,6 +562,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                     self.power_mode = payload["Power"].lower()
                 if "Mode" in payload:
                     self._hvac_mode = payload["Mode"].lower()
+                    # Some vendors send/receive mode as fan instead of fan_only
+                    if self._hvac_mode == CURRENT_HVAC_FAN:
+                        self._hvac_mode = HVAC_MODE_FAN_ONLY
                 if "Temp" in payload:
                     if payload["Temp"] > 0:
                         self._target_temp = payload["Temp"]
