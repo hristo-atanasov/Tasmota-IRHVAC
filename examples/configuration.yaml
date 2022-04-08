@@ -22,7 +22,7 @@ climate:
       - "heat"
       - "cool"
       - "dry"
-      - "fan_only"
+      - "fan_only" # Use "fan_only" even if Tasmota shows "Mode":"Fan"
       - "auto"
       - "off" #Turns the AC off - Should be in quotes
       # Some devices have "auto" and "fan_only" switched
