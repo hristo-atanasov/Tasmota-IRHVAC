@@ -44,6 +44,7 @@ from homeassistant.components.climate.const import (
     CURRENT_HVAC_COOL,
     CURRENT_HVAC_DRY,
     CURRENT_HVAC_FAN,
+    CURRENT_HVAC_OFF,
     PRESET_AWAY,
     PRESET_NONE,
     SUPPORT_FAN_MODE,
@@ -562,6 +563,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                     self.power_mode = payload["Power"].lower()
                 if "Mode" in payload:
                     self._hvac_mode = payload["Mode"].lower()
+                    # Some vendors send/receive mode as fan instead of fan_only
+                    if self._hvac_mode == CURRENT_HVAC_FAN:
+                        self._hvac_mode = HVAC_MODE_FAN_ONLY
                 if "Temp" in payload:
                     if payload["Temp"] > 0:
                         self._target_temp = payload["Temp"]
@@ -744,7 +748,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
 
         Need to be one of CURRENT_HVAC_*.
         """
-        if self._hvac_mode == HVAC_MODE_HEAT:
+        if self._hvac_mode == HVAC_MODE_OFF:
+            return CURRENT_HVAC_OFF
+        elif self._hvac_mode == HVAC_MODE_HEAT:
             return CURRENT_HVAC_HEAT
         elif self._hvac_mode == HVAC_MODE_COOL:
             return CURRENT_HVAC_COOL
@@ -752,7 +758,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             return CURRENT_HVAC_DRY
         elif self._hvac_mode == HVAC_MODE_FAN_ONLY:
             return CURRENT_HVAC_FAN
-        return self._hvac_mode
 
     @property
     def target_temperature(self):
