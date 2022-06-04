@@ -268,7 +268,10 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(MQTT_AVAILABILITY_SCHEMA.schema)
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(mqtt.MQTT_BASE_PLATFORM_SCHEMA.schema)
+if hasattr(mqtt, 'MQTT_BASE_PLATFORM_SCHEMA'):
+    PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(mqtt.MQTT_BASE_PLATFORM_SCHEMA.schema)
+else:
+    PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(mqtt.config.MQTT_BASE_SCHEMA.schema)
 
 IRHVAC_SERVICE_SCHEMA = vol.Schema(
     {vol.Required(ATTR_ENTITY_ID): cv.entity_ids})
@@ -736,7 +739,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     @property
     def hvac_mode(self):
         """Return current operation."""
-        return self._hvac_mode
+        return STATE_OFF if self._hvac_mode in [STATE_UNKNOWN, STATE_UNAVAILABLE] else self._hvac_mode
 
     @property
     def hvac_action(self):
