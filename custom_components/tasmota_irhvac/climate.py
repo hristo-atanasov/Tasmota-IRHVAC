@@ -439,9 +439,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._unit = hass.config.units.temperature_unit
         self._support_flags = SUPPORT_FLAGS
         if self._away_temp is not None:
-            self._support_flags = SUPPORT_FLAGS | SUPPORT_PRESET_MODE
+            self._support_flags = self._support_flags | SUPPORT_PRESET_MODE
         if self._swing_mode is not None:
-            self._support_flags = SUPPORT_FLAGS | SUPPORT_SWING_MODE
+            self._support_flags = self._support_flags | SUPPORT_SWING_MODE
         self._is_away = False
         self._modes_list = config[CONF_MODES_LIST]
         self._quiet = config[CONF_QUIET].lower()
