@@ -95,5 +95,5 @@ set_swingh:
       description: Name(s) of the entities to set
       example: "climate.ac_living"
     swingv:
-      description: '"off", "auto", "leftmax", "left", "middle", "right", "rightmax" or "wide", but only those supported by this model.'
+      description: '"off", "auto", "left max", "left", "middle", "right", "right max" or "wide", but only those supported by this model.'
       example: '"middle"'

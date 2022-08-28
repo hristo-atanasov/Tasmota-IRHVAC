@@ -307,7 +307,7 @@ SERVICE_SCHEMA_SET_SWINGV = IRHVAC_SERVICE_SCHEMA.extend(
     {vol.Required(ATTR_SWINGV): vol.In(['off', 'auto', 'highest', 'high', 'middle', 'low', 'lowest'])}
 )
 SERVICE_SCHEMA_SET_SWINGH = IRHVAC_SERVICE_SCHEMA.extend(
-    {vol.Required(ATTR_SWINGH): vol.In(['off', 'auto', 'leftmax', 'left', 'middle', 'right', 'rightmax', 'wide'])}
+    {vol.Required(ATTR_SWINGH): vol.In(['off', 'auto', 'left max', 'left', 'middle', 'right', 'right max', 'wide'])}
 )
 
 SERVICE_TO_METHOD = {
