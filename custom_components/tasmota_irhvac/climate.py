@@ -82,6 +82,8 @@ from .const import (
     ATTR_CLEAN,
     ATTR_BEEP,
     ATTR_SLEEP,
+    ATTR_SWINGV,
+    ATTR_SWINGH,
     ATTR_LAST_ON_MODE,
     ATTR_SWINGV,
     ATTR_SWINGH,
@@ -168,6 +170,8 @@ from .const import (
     SERVICE_CLEAN_MODE,
     SERVICE_BEEP_MODE,
     SERVICE_SLEEP_MODE,
+    SERVICE_SET_SWINGV,
+    SERVICE_SET_SWINGH,
 )
 
 DEFAULT_MODES_LIST = [
@@ -299,6 +303,12 @@ SERVICE_SCHEMA_BEEP_MODE = IRHVAC_SERVICE_SCHEMA.extend(
 SERVICE_SCHEMA_SLEEP_MODE = IRHVAC_SERVICE_SCHEMA.extend(
     {vol.Required(ATTR_SLEEP): cv.string}
 )
+SERVICE_SCHEMA_SET_SWINGV = IRHVAC_SERVICE_SCHEMA.extend(
+    {vol.Required(ATTR_SWINGV): vol.In(['off', 'auto', 'highest', 'high', 'middle', 'low', 'lowest'])}
+)
+SERVICE_SCHEMA_SET_SWINGH = IRHVAC_SERVICE_SCHEMA.extend(
+    {vol.Required(ATTR_SWINGH): vol.In(['off', 'auto', 'left max', 'left', 'middle', 'right', 'right max', 'wide'])}
+)
 
 SERVICE_TO_METHOD = {
     SERVICE_ECONO_MODE: {
@@ -332,6 +342,14 @@ SERVICE_TO_METHOD = {
     SERVICE_SLEEP_MODE: {
         'method': 'async_set_sleep',
         'schema': SERVICE_SCHEMA_SLEEP_MODE
+    },
+    SERVICE_SET_SWINGV: {
+        'method': 'async_set_swingv',
+        'schema': SERVICE_SCHEMA_SET_SWINGV
+    },
+    SERVICE_SET_SWINGH: {
+        'method': 'async_set_swingh',
+        'schema': SERVICE_SCHEMA_SET_SWINGH
     },
 }
 
@@ -948,6 +966,16 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     async def async_set_sleep(self, sleep):
         """Set new target sleep mode."""
         self._sleep = sleep.lower()
+        await self.async_send_cmd()
+
+    async def async_set_swingv(self, swingv):
+        """Set new target swingv."""
+        self._swingv = swingv.lower()
+        await self.async_send_cmd()
+
+    async def async_set_swingh(self, swingh):
+        """Set new target swingh."""
+        self._swingh = swingh.lower()
         await self.async_send_cmd()
 
     async def _async_power_sensor_changed(self, entity_id, old_state, new_state):
