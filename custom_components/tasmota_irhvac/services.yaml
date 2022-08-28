@@ -77,3 +77,23 @@ set_sleep:
     sleep:
       description: Sets Sleep mode
       example: "0"
+
+set_swingv:
+  description: Sets vane vertical position.
+  fields:
+    entity_id:
+      description: Name(s) of the entities to set
+      example: "climate.ac_living"
+    swingv:
+      description: '"off", "auto", "highest", "high", "middle", "low" or "lowest", but only those supported by this model.'
+      example: '"middle"'
+
+set_swingh:
+  description: Sets vane horizonal position.
+  fields:
+    entity_id:
+      description: Name(s) of the entities to set
+      example: "climate.ac_living"
+    swingv:
+      description: '"off", "auto", "leftmax", "left", "middle", "right", "rightmax" or "wide", but only those supported by this model.'
+      example: '"middle"'
