@@ -139,6 +139,8 @@ SERVICE_FILTERS_MODE = 'set_filters'
 SERVICE_CLEAN_MODE = 'set_clean'
 SERVICE_BEEP_MODE = 'set_beep'
 SERVICE_SLEEP_MODE = 'set_sleep'
+SERVICE_SET_SWINGV = 'set_swingv'
+SERVICE_SET_SWINGH = 'set_swingh'
 
 # Map attributes to properties of the state object
 ATTRIBUTES_IRHVAC = {
