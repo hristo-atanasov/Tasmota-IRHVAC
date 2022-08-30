@@ -921,9 +921,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             _LOGGER.error(self._swing_list)
             return
         self._swing_mode = swing_mode
-        if swing_mode == SWING_OFF:
-            self._swingv = STATE_OFF if self._fix_swingv is None else self._fix_swingv
-            self._swingh = STATE_OFF if self._fix_swingh is None else self._fix_swingh
+        # note: set _swingv and _swingh in send_ir() later
         if not self._hvac_mode == HVAC_MODE_OFF:
             self.power_mode = STATE_ON
         await self.async_send_cmd()
@@ -1123,10 +1121,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
 
 
         # Set the swing mode - default off
-        if self._swingv is None:
-            self._swingv = STATE_OFF if self._fix_swingv is None else self._fix_swingv
-        if self._swingv is None:
-            self._swingh = STATE_OFF if self._fix_swingh is None else self._fix_swingh
+        self._swingv = STATE_OFF if self._fix_swingv is None else self._fix_swingv
+        self._swingh = STATE_OFF if self._fix_swingh is None else self._fix_swingh
 
         if SWING_BOTH in self._swing_list or SWING_VERTICAL in self._swing_list:
             if self._swing_mode == SWING_BOTH or self._swing_mode == SWING_VERTICAL:
