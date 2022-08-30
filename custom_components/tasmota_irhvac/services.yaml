@@ -1,99 +1,164 @@
 set_econo:
   description: Sets Econo mode.
+  target:
+    entity:
+      domain: climate
   fields:
-    entity_id:
-      description: Name(s) of the entities to set
-      example: "climate.ac_living"
     econo:
       description: Sets Econo mode
       example: "on"
+      required: true
+      selector:
+        select:
+          options:
+            - "off"
+            - "on"
 
 set_turbo:
   description: Sets Turbo mode.
+  target:
+    entity:
+      domain: climate
   fields:
-    entity_id:
-      description: Name(s) of the entities to set
-      example: "climate.ac_living"
     turbo:
       description: Sets Turbo mode
       example: "on"
+      required: true
+      selector:
+        select:
+          options:
+            - "off"
+            - "on"
 
 set_filters:
   description: Sets Filters mode.
+  target:
+    entity:
+      domain: climate
   fields:
-    entity_id:
-      description: Name(s) of the entities to set
-      example: "climate.ac_living"
     filters:
       description: Sets Filters mode
       example: "on"
+      required: true
+      selector:
+        select:
+          options:
+            - "off"
+            - "on"
 
 set_light:
+  target:
+    entity:
+      domain: climate
   description: Sets Light mode.
   fields:
-    entity_id:
-      description: Name(s) of the entities to set
-      example: "climate.ac_living"
     light:
       description: Sets Light mode
       example: "on"
+      required: true
+      selector:
+        select:
+          options:
+            - "off"
+            - "on"
 
 set_quiet:
+  target:
+    entity:
+      domain: climate
   description: Sets Quiet mode.
   fields:
-    entity_id:
-      description: Name(s) of the entities to set
-      example: "climate.ac_living"
     quiet:
       description: Sets Quiet mode
       example: "on"
+      required: true
+      selector:
+        select:
+          options:
+            - "off"
+            - "on"
 
 set_clean:
+  target:
+    entity:
+      domain: climate
   description: Sets Clean mode.
   fields:
-    entity_id:
-      description: Name(s) of the entities to set
-      example: "climate.ac_living"
     clean:
       description: Sets Clean mode
       example: "on"
+      required: true
+      selector:
+        select:
+          options:
+            - "off"
+            - "on"
 
 set_beep:
+  target:
+    entity:
+      domain: climate
   description: Sets Beep mode.
   fields:
-    entity_id:
-      description: Name(s) of the entities to set
-      example: "climate.ac_living"
     beep:
       description: Sets Beep mode
       example: "on"
+      required: true
+      selector:
+        select:
+          options:
+            - "off"
+            - "on"
 
 set_sleep:
   description: Sets Sleep mode.
+  target:
+    entity:
+      domain: climate
   fields:
-    entity_id:
-      description: Name(s) of the entities to set
-      example: "climate.ac_living"
     sleep:
       description: Sets Sleep mode
       example: "0"
+      required: true
 
 set_swingv:
   description: Sets vane vertical position.
+  target:
+    entity:
+      domain: climate
   fields:
-    entity_id:
-      description: Name(s) of the entities to set
-      example: "climate.ac_living"
     swingv:
       description: '"off", "auto", "highest", "high", "middle", "low" or "lowest", but only those supported by this model.'
       example: '"middle"'
+      required: true
+      selector:
+        select:
+          options:
+            - "off"
+            - "auto"
+            - "highest"
+            - "middle"
+            - "low"
+            - "lowest"
 
 set_swingh:
+  name: Set swingh
   description: Sets vane horizonal position.
+  target:
+    entity:
+      domain: climate
   fields:
-    entity_id:
-      description: Name(s) of the entities to set
-      example: "climate.ac_living"
-    swingv:
+    swingh:
       description: '"off", "auto", "left max", "left", "middle", "right", "right max" or "wide", but only those supported by this model.'
       example: '"middle"'
+      required: true
+      selector:
+        select:
+          options:
+            - "off"
+            - "auto"
+            - "left max"
+            - "middle"
+            - "right"
+            - "right max"
+            - "wide"
