@@ -130,6 +130,8 @@ ATTR_SLEEP = 'sleep'
 ATTR_LAST_ON_MODE = 'last_on_mode'
 ATTR_SWINGV = 'swingv'
 ATTR_SWINGH = 'swingh'
+ATTR_FIX_SWINGV = 'fix_swingv'
+ATTR_FIX_SWINGH = 'fix_swingh'
 
 SERVICE_ECONO_MODE = 'set_econo'
 SERVICE_TURBO_MODE = 'set_turbo'
@@ -155,6 +157,8 @@ ATTRIBUTES_IRHVAC = {
     ATTR_LAST_ON_MODE: 'last_on_mode',
     ATTR_SWINGV: 'swingv',
     ATTR_SWINGH: 'swingh',
+    ATTR_FIX_SWINGV: 'fix_swingv',
+    ATTR_FIX_SWINGH: 'fix_swingh',
 }
 
 ON_OFF_LIST = [
