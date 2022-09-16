@@ -90,6 +90,7 @@ CONF_SLEEP = "default_sleep_mode"
 CONF_KEEP_MODE = "keep_mode_when_off"
 CONF_SWINGV = "default_swingv"
 CONF_SWINGH = "default_swingh"
+CONF_DNT_SEND_LIST = "dnt_send_list"
 
 # Platform specific default values
 DEFAULT_NAME = "IR AirConditioner"
@@ -150,7 +151,7 @@ ATTRIBUTES_IRHVAC = {
     ATTR_TURBO: 'turbo',
     ATTR_QUIET: 'quiet',
     ATTR_LIGHT: 'light',
-    ATTR_FILTERS: 'filters',
+    ATTR_FILTERS: 'filter',
     ATTR_CLEAN: 'clean',
     ATTR_BEEP: 'beep',
     ATTR_SLEEP: 'sleep',
@@ -168,4 +169,17 @@ ON_OFF_LIST = [
     'Off',
     'on',
     'off'
+]
+
+DNT_SEND_ALL_LIST = [
+    'SwingV',
+    'SwingH',
+    'Quiet',
+    'Turbo',
+    'Econo',
+    'Light',
+    'Filter',
+    'Clean',
+    'Beep',
+    'Sleep',
 ]

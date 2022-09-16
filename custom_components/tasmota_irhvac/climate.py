@@ -138,6 +138,7 @@ from .const import (
     CONF_KEEP_MODE,
     CONF_SWINGV,
     CONF_SWINGH,
+    CONF_DNT_SEND_LIST,
     DATA_KEY,
     DOMAIN,
     DEFAULT_NAME,
@@ -170,6 +171,7 @@ from .const import (
     SERVICE_SLEEP_MODE,
     SERVICE_SET_SWINGV,
     SERVICE_SET_SWINGH,
+    DNT_SEND_ALL_LIST,
 )
 
 DEFAULT_MODES_LIST = [
@@ -265,6 +267,10 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_KEEP_MODE, default=DEFAULT_CONF_KEEP_MODE): cv.boolean,
         vol.Optional(CONF_SWINGV): cv.string,
         vol.Optional(CONF_SWINGH): cv.string,
+        vol.Optional(CONF_DNT_SEND_LIST, default=[]): vol.All(
+            cv.ensure_list,
+            [vol.In(DNT_SEND_ALL_LIST)],
+        ),
     }
 )
 
@@ -465,7 +471,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._model = config[CONF_MODEL]
         self._celsius = config[CONF_CELSIUS]
         self._light = config[CONF_LIGHT].lower()
-        self._filters = config[CONF_FILTER].lower()
+        self._filter = config[CONF_FILTER].lower()
         self._clean = config[CONF_CLEAN].lower()
         self._beep = config[CONF_BEEP].lower()
         self._sleep = config[CONF_SLEEP].lower()
@@ -476,6 +482,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._swingh = config.get(CONF_SWINGH).lower() if config.get(CONF_SWINGH) is not None else None
         self._fix_swingv = None
         self._fix_swingh = None
+        self._dnt_send_list = config[CONF_DNT_SEND_LIST]
+        self._force_send_list = []
 
         availability_topic = config.get(CONF_AVAILABILITY_TOPIC)
         if (availability_topic) is None:
@@ -513,10 +521,10 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             if old_state.attributes.get(ATTR_LAST_ON_MODE) is not None:
                 self._last_on_mode = old_state.attributes.get(ATTR_LAST_ON_MODE)
 
-            for attr in ATTRIBUTES_IRHVAC:
+            for attr, prop in ATTRIBUTES_IRHVAC.items():
                 val = old_state.attributes.get(attr)
                 if val is not None:
-                    setattr(self, "_" + attr, val)
+                    setattr(self, "_" + prop, val)
             if old_state.state:
                 self._hvac_mode = old_state.state
                 self._enabled = self._hvac_mode != HVAC_MODE_OFF
@@ -603,7 +611,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 if "Light" in payload:
                     self._light = payload["Light"].lower()
                 if "Filter" in payload:
-                    self._filters = payload["Filter"].lower()
+                    self._filter = payload["Filter"].lower()
                 if "Clean" in payload:
                     self._clean = payload["Clean"].lower()
                 if "Beep" in payload:
@@ -720,8 +728,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     @property
     def extra_state_attributes(self):
         """Return the state attributes of the device."""
-        return {attribute: getattr(self, '_' + attribute)
-             for attribute in ATTRIBUTES_IRHVAC}
+        return {attr: getattr(self, '_' + prop)
+             for attr, prop in ATTRIBUTES_IRHVAC.items()}
 
     @property
     def should_poll(self):
@@ -922,6 +930,15 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         # note: set _swingv and _swingh in send_ir() later
         if not self._hvac_mode == HVAC_MODE_OFF:
             self.power_mode = STATE_ON
+        if self._swing_mode == SWING_BOTH or self._swing_mode == SWING_OFF:
+            if SWING_VERTICAL in self._swing_list:
+                self._force_send_list.append('SwingV')
+            if SWING_HORIZONTAL in self._swing_list:
+                self._force_send_list.append('SwingH')
+        elif self._swing_mode == SWING_VERTICAL:
+            self._force_send_list.append('SwingV')
+        elif self._swing_mode == SWING_HORIZONTAL:
+            self._force_send_list.append('SwingH')
         await self.async_send_cmd()
 
     async def async_set_econo(self, econo):
@@ -929,6 +946,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         if econo not in ON_OFF_LIST:
             return
         self._econo = econo.lower()
+        self._force_send_list.append('Econo')
         await self.async_send_cmd()
 
     async def async_set_turbo(self, turbo):
@@ -936,6 +954,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         if turbo not in ON_OFF_LIST:
             return
         self._turbo = turbo.lower()
+        self._force_send_list.append('Turbo')
         await self.async_send_cmd()
 
     async def async_set_quiet(self, quiet):
@@ -943,6 +962,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         if quiet not in ON_OFF_LIST:
             return
         self._quiet = quiet.lower()
+        self._force_send_list.append('Quiet')
         await self.async_send_cmd()
 
     async def async_set_light(self, light):
@@ -950,13 +970,15 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         if light not in ON_OFF_LIST:
             return
         self._light = light.lower()
+        self._force_send_list.append('Light')
         await self.async_send_cmd()
 
     async def async_set_filters(self, filters):
         """Set new target filters mode."""
         if filters not in ON_OFF_LIST:
             return
-        self._filters = filters.lower()
+        self._filter = filters.lower()
+        self._force_send_list.append('Filter')
         await self.async_send_cmd()
 
     async def async_set_clean(self, clean):
@@ -964,6 +986,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         if clean not in ON_OFF_LIST:
             return
         self._clean = clean.lower()
+        self._force_send_list.append('Clean')
         await self.async_send_cmd()
 
     async def async_set_beep(self, beep):
@@ -971,11 +994,13 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         if beep not in ON_OFF_LIST:
             return
         self._beep = beep.lower()
+        self._force_send_list.append('Beep')
         await self.async_send_cmd()
 
     async def async_set_sleep(self, sleep):
         """Set new target sleep mode."""
         self._sleep = sleep.lower()
+        self._force_send_list.append('Sleep')
         await self.async_send_cmd()
 
     async def async_set_swingv(self, swingv):
@@ -995,6 +1020,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             else:
                 if SWING_VERTICAL in self._swing_list:
                     self._swing_mode = SWING_VERTICAL
+        self._force_send_list.append('SwingV')
         await self.async_send_cmd()
 
     async def async_set_swingh(self, swingh):
@@ -1014,6 +1040,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             else:
                 if SWING_HORIZONTAL in self._swing_list:
                     self._swing_mode = SWING_HORIZONTAL
+        self._force_send_list.append('SwingH')
         await self.async_send_cmd()
 
     async def _async_power_sensor_changed(self, entity_id, old_state, new_state):
@@ -1167,19 +1194,15 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             "Celsius": self._celsius,
             "Temp": self._target_temp,
             "FanSpeed": fan_speed,
-            "SwingV": self._swingv,
-            "SwingH": self._swingh,
-            "Quiet": self._quiet,
-            "Turbo": self._turbo,
-            "Econo": self._econo,
-            "Light": self._light,
-            "Filter": self._filters,
-            "Clean": self._clean,
-            "Beep": self._beep,
-            "Sleep": self._sleep,
             "Clock": int(_min),
             "Weekday": int(_dt.weekday()),
         }
+        for key in DNT_SEND_ALL_LIST:
+            if key in self._force_send_list or key not in self._dnt_send_list:
+                payload_data[key] = getattr(self, '_' + key.lower())
+
+        self._force_send_list = []
+
         payload = (json.dumps(payload_data))
         # Publish mqtt message
         await mqtt.async_publish(self.hass, self.topic, payload)
