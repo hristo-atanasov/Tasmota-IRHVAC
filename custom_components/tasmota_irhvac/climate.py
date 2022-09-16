@@ -85,8 +85,6 @@ from .const import (
     ATTR_SWINGV,
     ATTR_SWINGH,
     ATTR_LAST_ON_MODE,
-    ATTR_SWINGV,
-    ATTR_SWINGH,
     ATTRIBUTES_IRHVAC,
     STATE_AUTO,
     STATE_COOL,
@@ -985,6 +983,18 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._swingv = swingv.lower()
         if self._swingv != "auto":
             self._fix_swingv = self._swingv
+            if self._swing_mode == SWING_BOTH:
+                if SWING_HORIZONTAL in self._swing_list:
+                    self._swing_mode = SWING_HORIZONTAL
+            elif self._swing_mode == SWING_VERTICAL:
+                self._swing_mode = SWING_OFF
+        else:
+            if self._swing_mode == SWING_HORIZONTAL:
+                if SWING_BOTH in self._swing_list:
+                    self._swing_mode = SWING_BOTH
+            else:
+                if SWING_VERTICAL in self._swing_list:
+                    self._swing_mode = SWING_VERTICAL
         await self.async_send_cmd()
 
     async def async_set_swingh(self, swingh):
@@ -992,6 +1002,18 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._swingh = swingh.lower()
         if self._swingh != "auto":
             self._fix_swingh = self._swingh
+            if self._swing_mode == SWING_BOTH:
+                if SWING_VERTICAL in self._swing_list:
+                    self._swing_mode = SWING_VERTICAL
+            elif self._swing_mode == SWING_HORIZONTAL:
+                self._swing_mode = SWING_OFF
+        else:
+            if self._swing_mode == SWING_VERTICAL:
+                if SWING_BOTH in self._swing_list:
+                    self._swing_mode = SWING_BOTH
+            else:
+                if SWING_HORIZONTAL in self._swing_list:
+                    self._swing_mode = SWING_HORIZONTAL
         await self.async_send_cmd()
 
     async def _async_power_sensor_changed(self, entity_id, old_state, new_state):

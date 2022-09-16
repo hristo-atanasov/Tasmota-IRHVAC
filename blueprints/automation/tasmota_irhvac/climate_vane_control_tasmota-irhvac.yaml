@@ -1,0 +1,121 @@
+blueprint:
+  name: Climate Vane Control - Tasmota-IRHVAC
+  description: Contoroling vertical or horizontal vane swing, potition of Climate on Tasmota-IRHVAC
+  domain: automation
+  source_url: https://github.com/hristo-atanasov/Tasmota-IRHVAC/blob/master/blueprints/automation/tasmota_irhvac/climate_vane_control_tasmota-irhvac.yaml
+  input:
+    climate_entity:
+      name: Target Climate
+      selector:
+        entity:
+          integration: tasmota_irhvac
+          domain: climate
+    input_entity:
+      name: Dropdown Input Helper
+      selector:
+        entity:
+          domain: input_select
+      description: "The dropdown input helper entity can have the following options if the device supports it.
+
+### Vertical Vane
+
+- off
+
+- auto
+
+- highest
+
+- high
+
+- low
+
+- lowest
+
+
+### Horizontal Vane
+
+- off
+
+- auto
+
+- left max
+
+- left
+
+- middle
+
+- right
+
+- right max
+
+- wide
+
+"
+    vane:
+      name: Target Vane
+      default: Vertical
+      selector:
+        select:
+          options:
+            - Vertical
+            - Horizontal
+
+mode: parallel
+max: 2
+
+variables:
+  vane:
+    attr:
+      Vertical: swingv
+      Horizontal: swingh
+    srv:
+      Vertical: tasmota_irhvac.set_swingv
+      Horizontal: tasmota_irhvac.set_swingh
+  key: !input vane
+  climate_entity: !input climate_entity
+
+trigger:
+  - platform: state
+    entity_id:
+      - !input climate_entity
+    attribute: swingv
+    id: Vertical
+  - platform: state
+    entity_id:
+      - !input climate_entity
+    attribute: swingh
+    id: Horizontal
+  - platform: state
+    entity_id:
+      - !input input_entity
+    id: set
+
+action:
+  - if:
+      - condition: trigger
+        id: set
+      - condition: template
+        value_template: "{{state_attr(climate_entity, vane.attr[key]) != states(trigger.entity_id)}}"
+    then:
+      - if:
+          - condition: template
+            value_template: "{{key == 'Vertical'}}"
+        then:
+          - service: "{{vane.srv[key]}}"
+            data:
+              entity_id: !input climate_entity
+              swingv: "{{states(trigger.entity_id)}}"
+        else:
+          - service: "{{vane.srv[key]}}"
+            data:
+              entity_id: !input climate_entity
+              swingh: "{{states(trigger.entity_id)}}"
+  - if:
+      - condition: template
+        value_template: '{{key == trigger.id}}'
+    then:
+      - service: input_select.select_option
+        data:
+          option: "{{state_attr(climate_entity, vane.attr[key])}}"
+        target:
+          entity_id: !input input_entity
