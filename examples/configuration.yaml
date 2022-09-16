@@ -65,3 +65,18 @@ climate:
     default_swingv: "high" #optional - default "" string value
     default_swingh: "left" #optional - default "" string value 
     keep_mode_when_off: True #optional - default False boolean value : Must be True for MITSUBISHI_AC, ECOCLIM, etc.
+    dnt_send_list: #optional - default []
+      # This is a setting that does not transmit the data if the On transmission
+      # is a toggle operation of a function, and if tasmota_irhvac sends On each
+      # time it does not result in normal operation. If you want a toggle
+      # action, it can be sent by the service.
+      #  - Beep
+      #  - Clean
+      #  - Econo
+      #  - Filter
+      #  - Light
+      #  - Quiet
+      #  - Sleep
+      #  - SwingH
+      #  - SwingV
+      #  - Turbo
