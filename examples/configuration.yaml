@@ -65,3 +65,16 @@ climate:
     default_swingv: "high" #optional - default "" string value
     default_swingh: "left" #optional - default "" string value 
     keep_mode_when_off: True #optional - default False boolean value : Must be True for MITSUBISHI_AC, ECOCLIM, etc.
+    toggle_list: #optional - default []
+      # The toggled property is a setting that does not retain the On state.
+      # Set this if your AC properties are toggle function.
+      #- Beep
+      #- Clean
+      #- Econo
+      #- Filter
+      #- Light
+      #- Quiet
+      #- Sleep
+      #- SwingH
+      #- SwingV
+      #- Turbo
