@@ -2,7 +2,7 @@ set_econo:
   description: Sets Econo mode.
   target:
     entity:
-      domain: climate
+      integration: tasmota_irhvac
   fields:
     econo:
       description: Sets Econo mode
@@ -18,7 +18,7 @@ set_turbo:
   description: Sets Turbo mode.
   target:
     entity:
-      domain: climate
+      integration: tasmota_irhvac
   fields:
     turbo:
       description: Sets Turbo mode
@@ -34,7 +34,7 @@ set_filters:
   description: Sets Filters mode.
   target:
     entity:
-      domain: climate
+      integration: tasmota_irhvac
   fields:
     filters:
       description: Sets Filters mode
@@ -49,7 +49,7 @@ set_filters:
 set_light:
   target:
     entity:
-      domain: climate
+      integration: tasmota_irhvac
   description: Sets Light mode.
   fields:
     light:
@@ -65,7 +65,7 @@ set_light:
 set_quiet:
   target:
     entity:
-      domain: climate
+      integration: tasmota_irhvac
   description: Sets Quiet mode.
   fields:
     quiet:
@@ -81,7 +81,7 @@ set_quiet:
 set_clean:
   target:
     entity:
-      domain: climate
+      integration: tasmota_irhvac
   description: Sets Clean mode.
   fields:
     clean:
@@ -97,7 +97,7 @@ set_clean:
 set_beep:
   target:
     entity:
-      domain: climate
+      integration: tasmota_irhvac
   description: Sets Beep mode.
   fields:
     beep:
@@ -114,7 +114,7 @@ set_sleep:
   description: Sets Sleep mode.
   target:
     entity:
-      domain: climate
+      integration: tasmota_irhvac
   fields:
     sleep:
       description: Sets Sleep mode
@@ -125,7 +125,7 @@ set_swingv:
   description: Sets vane vertical position.
   target:
     entity:
-      domain: climate
+      integration: tasmota_irhvac
   fields:
     swingv:
       description: '"off", "auto", "highest", "high", "middle", "low" or "lowest", but only those supported by this model.'
@@ -146,7 +146,7 @@ set_swingh:
   description: Sets vane horizonal position.
   target:
     entity:
-      domain: climate
+      integration: tasmota_irhvac
   fields:
     swingh:
       description: '"off", "auto", "left max", "left", "middle", "right", "right max" or "wide", but only those supported by this model.'
