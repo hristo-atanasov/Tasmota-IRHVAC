@@ -670,6 +670,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                             self._fan_mode = HVAC_FAN_MAX
                         else:
                             self._fan_mode = fan_mode
+                    # crackn
+                    elif fan_mode == "min":
+                        self._fan_mode = FAN_LOW
                     else:
                         self._fan_mode = fan_mode
                     _LOGGER.debug(self._fan_mode)
@@ -1180,7 +1183,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             "Mode": self._last_on_mode if self._keep_mode else self._hvac_mode,
             "Celsius": self._celsius,
             "Temp": self._target_temp,
-            "FanSpeed": fan_speed,
+            # crackn
+            "FanSpeed": "min" if fan_speed == FAN_LOW else fan_speed,
             "SwingV": self._swingv,
             "SwingH": self._swingh,
             "Quiet": self._quiet,
