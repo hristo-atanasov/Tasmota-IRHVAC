@@ -14,6 +14,7 @@ climate:
     humidity_sensor: sensor.kitchen_humidity #optional - default None
     power_sensor: binaly_sensor.kitchen_ac_power #optional - default None
     vendor: "ELECTRA_AC"
+    mqtt_delay: 0.0 #optional - default 0 int or 0.0 float value in [sec].
     min_temp: 16 #optional - default 16 int value
     max_temp: 32 #optional - default 32 int value
     target_temp: 26 #optional - default 26 int value
