@@ -115,6 +115,7 @@ from .const import (
     CONF_TEMP_SENSOR,
     CONF_HUMIDITY_SENSOR,
     CONF_POWER_SENSOR,
+    CONF_MQTT_DELAY,
     CONF_MIN_TEMP,
     CONF_MAX_TEMP,
     CONF_TARGET_TEMP,
@@ -144,6 +145,7 @@ from .const import (
     DEFAULT_NAME,
     DEFAULT_STATE_TOPIC,
     DEFAULT_COMMAND_TOPIC,
+    DEFAULT_MQTT_DELAY,
     DEFAULT_TARGET_TEMP,
     DEFAULT_MIN_TEMP,
     DEFAULT_MAX_TEMP,
@@ -208,6 +210,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(
             CONF_STATE_TOPIC, default=DEFAULT_STATE_TOPIC
         ): mqtt.valid_subscribe_topic,
+        vol.Optional(CONF_MQTT_DELAY, default=DEFAULT_MQTT_DELAY): vol.Coerce(float),
         vol.Optional(CONF_MAX_TEMP, default=DEFAULT_MAX_TEMP): vol.Coerce(float),
         vol.Optional(CONF_MIN_TEMP, default=DEFAULT_MIN_TEMP): vol.Coerce(float),
         vol.Optional(CONF_TARGET_TEMP, default=DEFAULT_TARGET_TEMP): vol.Coerce(float),
@@ -451,6 +454,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._enabled = False
         self.power_mode = None
         self._active = False
+        self._mqtt_delay = config[CONF_MQTT_DELAY]
         self._cur_temp = None
         self._min_temp = config[CONF_MIN_TEMP]
         self._max_temp = config[CONF_MAX_TEMP]
@@ -1198,7 +1202,11 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             setattr(self, '_' + key.lower(), 'off')
 
         payload = (json.dumps(payload_data))
+        
         # Publish mqtt message
+        if float(self._mqtt_delay) != float(DEFAULT_MQTT_DELAY):
+            await asyncio.sleep(float(self._mqtt_delay))
+            
         await mqtt.async_publish(self.hass, self.topic, payload)
 
         # Update HA UI and State
