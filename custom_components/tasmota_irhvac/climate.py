@@ -693,7 +693,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                     setattr(self, '_' + key.lower(), 'off')
 
                 # Update HA UI and State
-                await self.async_update_ha_state()
+                self.async_write_ha_state()
                 #self.async_schedule_update_ha_state()
 
                 # Check power sensor state
@@ -1049,17 +1049,17 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 else:
                     self._hvac_mode = STATE_ON
                 self.power_mode = STATE_ON
-                await self.async_update_ha_state()
+                self.async_write_ha_state()
 
         elif new_state.state == STATE_OFF:
             if self._hvac_mode != HVAC_MODE_OFF or self.power_mode == STATE_ON:
                 self._hvac_mode = HVAC_MODE_OFF
                 self.power_mode = STATE_OFF
-                await self.async_update_ha_state()
+                self.async_write_ha_state()
 
     async def async_send_cmd(self):
         await self.send_ir()
-        await self.async_update_ha_state()
+        self.async_write_ha_state()
 
     @property
     def min_temp(self):
@@ -1085,7 +1085,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             return
 
         self._async_update_temp(new_state)
-        await self.async_update_ha_state()
+        self.async_write_ha_state()
 
     async def _async_humidity_sensor_changed(self, entity_id, old_state, new_state):
         """Handle humidity sensor changes."""
@@ -1093,7 +1093,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             return
 
         self._async_update_humidity(new_state)
-        await self.async_update_ha_state()
+        self.async_write_ha_state()
 
     @callback
     def _async_update_temp(self, state):
@@ -1135,7 +1135,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             self._is_away = False
             self._target_temp = self._saved_target_temp
         await self.send_ir()
-        await self.async_update_ha_state()
+        self.async_write_ha_state()
 
     async def set_mode(self, hvac_mode):
         """Set hvac mode."""
