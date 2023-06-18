@@ -115,6 +115,7 @@ DEFAULT_CONF_CLEAN = "off"
 DEFAULT_CONF_BEEP = "off"
 DEFAULT_CONF_SLEEP = "-1"
 DEFAULT_CONF_KEEP_MODE = False
+DEFAULT_STATE_MODE = "SendStore"
 
 ATTR_NAME = "name"
 ATTR_VALUE = "value"
@@ -135,6 +136,7 @@ ATTR_SWINGV = 'swingv'
 ATTR_SWINGH = 'swingh'
 ATTR_FIX_SWINGV = 'fix_swingv'
 ATTR_FIX_SWINGH = 'fix_swingh'
+ATTR_STATE_MODE = 'state_mode'
 
 SERVICE_ECONO_MODE = 'set_econo'
 SERVICE_TURBO_MODE = 'set_turbo'
@@ -184,4 +186,9 @@ TOGGLE_ALL_LIST = [
     'Clean',
     'Beep',
     'Sleep',
+]
+
+STATE_MODE_LIST = [
+    'StoreOnly',
+    'SendStore'
 ]
