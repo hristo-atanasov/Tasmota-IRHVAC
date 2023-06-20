@@ -85,6 +85,7 @@ from .const import (
     ATTR_SWINGV,
     ATTR_SWINGH,
     ATTR_LAST_ON_MODE,
+    ATTR_STATE_MODE,
     ATTRIBUTES_IRHVAC,
     STATE_AUTO,
     STATE_COOL,
@@ -162,7 +163,9 @@ from .const import (
     DEFAULT_CONF_BEEP,
     DEFAULT_CONF_SLEEP,
     DEFAULT_CONF_KEEP_MODE,
+    DEFAULT_STATE_MODE,
     ON_OFF_LIST,
+    STATE_MODE_LIST,
     SERVICE_ECONO_MODE,
     SERVICE_TURBO_MODE,
     SERVICE_QUIET_MODE,
@@ -287,34 +290,64 @@ IRHVAC_SERVICE_SCHEMA = vol.Schema(
     {vol.Required(ATTR_ENTITY_ID): cv.entity_ids})
 
 SERVICE_SCHEMA_ECONO_MODE = IRHVAC_SERVICE_SCHEMA.extend(
-    {vol.Required(ATTR_ECONO): vol.In(ON_OFF_LIST)}
+    {
+        vol.Required(ATTR_ECONO): vol.In(ON_OFF_LIST),
+        vol.Optional(ATTR_STATE_MODE, default=DEFAULT_STATE_MODE): vol.In(STATE_MODE_LIST)
+    }
 )
 SERVICE_SCHEMA_TURBO_MODE = IRHVAC_SERVICE_SCHEMA.extend(
-    {vol.Required(ATTR_TURBO): vol.In(ON_OFF_LIST)}
+    {
+        vol.Required(ATTR_TURBO): vol.In(ON_OFF_LIST),
+        vol.Optional(ATTR_STATE_MODE, default=DEFAULT_STATE_MODE): vol.In(STATE_MODE_LIST)
+    }
 )
 SERVICE_SCHEMA_QUIET_MODE = IRHVAC_SERVICE_SCHEMA.extend(
-    {vol.Required(ATTR_QUIET): vol.In(ON_OFF_LIST)}
+    {
+        vol.Required(ATTR_QUIET): vol.In(ON_OFF_LIST),
+        vol.Optional(ATTR_STATE_MODE, default=DEFAULT_STATE_MODE): vol.In(STATE_MODE_LIST)
+    }
 )
 SERVICE_SCHEMA_LIGHT_MODE = IRHVAC_SERVICE_SCHEMA.extend(
-    {vol.Required(ATTR_LIGHT): vol.In(ON_OFF_LIST)}
+    {
+        vol.Required(ATTR_LIGHT): vol.In(ON_OFF_LIST),
+        vol.Optional(ATTR_STATE_MODE, default=DEFAULT_STATE_MODE): vol.In(STATE_MODE_LIST)
+    }
 )
 SERVICE_SCHEMA_FILTERS_MODE = IRHVAC_SERVICE_SCHEMA.extend(
-    {vol.Required(ATTR_FILTERS): vol.In(ON_OFF_LIST)}
+    {
+        vol.Required(ATTR_FILTERS): vol.In(ON_OFF_LIST),
+        vol.Optional(ATTR_STATE_MODE, default=DEFAULT_STATE_MODE): vol.In(STATE_MODE_LIST)
+    }
 )
 SERVICE_SCHEMA_CLEAN_MODE = IRHVAC_SERVICE_SCHEMA.extend(
-    {vol.Required(ATTR_CLEAN): vol.In(ON_OFF_LIST)}
+    {
+        vol.Required(ATTR_CLEAN): vol.In(ON_OFF_LIST),
+        vol.Optional(ATTR_STATE_MODE, default=DEFAULT_STATE_MODE): vol.In(STATE_MODE_LIST)
+    }
 )
 SERVICE_SCHEMA_BEEP_MODE = IRHVAC_SERVICE_SCHEMA.extend(
-    {vol.Required(ATTR_BEEP): vol.In(ON_OFF_LIST)}
+    {
+        vol.Required(ATTR_BEEP): vol.In(ON_OFF_LIST),
+        vol.Optional(ATTR_STATE_MODE, default=DEFAULT_STATE_MODE): vol.In(STATE_MODE_LIST)
+    }
 )
 SERVICE_SCHEMA_SLEEP_MODE = IRHVAC_SERVICE_SCHEMA.extend(
-    {vol.Required(ATTR_SLEEP): cv.string}
+    {
+        vol.Required(ATTR_SLEEP): cv.string,
+        vol.Optional(ATTR_STATE_MODE, default=DEFAULT_STATE_MODE): vol.In(STATE_MODE_LIST)
+    }
 )
 SERVICE_SCHEMA_SET_SWINGV = IRHVAC_SERVICE_SCHEMA.extend(
-    {vol.Required(ATTR_SWINGV): vol.In(['off', 'auto', 'highest', 'high', 'middle', 'low', 'lowest'])}
+    {
+        vol.Required(ATTR_SWINGV): vol.In(['off', 'auto', 'highest', 'high', 'middle', 'low', 'lowest']),
+        vol.Optional(ATTR_STATE_MODE, default=DEFAULT_STATE_MODE): vol.In(STATE_MODE_LIST)
+    }
 )
 SERVICE_SCHEMA_SET_SWINGH = IRHVAC_SERVICE_SCHEMA.extend(
-    {vol.Required(ATTR_SWINGH): vol.In(['off', 'auto', 'left max', 'left', 'middle', 'right', 'right max', 'wide'])}
+    {
+        vol.Required(ATTR_SWINGH): vol.In(['off', 'auto', 'left max', 'left', 'middle', 'right', 'right max', 'wide']),
+        vol.Optional(ATTR_STATE_MODE, default=DEFAULT_STATE_MODE): vol.In(STATE_MODE_LIST)
+    }
 )
 
 SERVICE_TO_METHOD = {
@@ -487,6 +520,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._fix_swingv = None
         self._fix_swingh = None
         self._toggle_list = config[CONF_TOGGLE_LIST]
+        self._state_mode = DEFAULT_STATE_MODE
 
         availability_topic = config.get(CONF_AVAILABILITY_TOPIC)
         if (availability_topic) is None:
@@ -942,61 +976,69 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             self.power_mode = STATE_ON
         await self.async_send_cmd()
 
-    async def async_set_econo(self, econo):
+    async def async_set_econo(self, econo, state_mode):
         """Set new target econo mode."""
         if econo not in ON_OFF_LIST:
             return
         self._econo = econo.lower()
+        self._state_mode = state_mode
         await self.async_send_cmd()
 
-    async def async_set_turbo(self, turbo):
+    async def async_set_turbo(self, turbo, state_mode):
         """Set new target turbo mode."""
         if turbo not in ON_OFF_LIST:
             return
         self._turbo = turbo.lower()
+        self._state_mode = state_mode
         await self.async_send_cmd()
 
-    async def async_set_quiet(self, quiet):
+    async def async_set_quiet(self, quiet, state_mode):
         """Set new target quiet mode."""
         if quiet not in ON_OFF_LIST:
             return
         self._quiet = quiet.lower()
+        self._state_mode = state_mode
         await self.async_send_cmd()
 
-    async def async_set_light(self, light):
+    async def async_set_light(self, light, state_mode):
         """Set new target light mode."""
         if light not in ON_OFF_LIST:
             return
         self._light = light.lower()
+        self._state_mode = state_mode
         await self.async_send_cmd()
 
-    async def async_set_filters(self, filters):
+    async def async_set_filters(self, filters, state_mode):
         """Set new target filters mode."""
         if filters not in ON_OFF_LIST:
             return
         self._filter = filters.lower()
+        self._state_mode = state_mode
         await self.async_send_cmd()
 
-    async def async_set_clean(self, clean):
+    async def async_set_clean(self, clean, state_mode):
         """Set new target clean mode."""
         if clean not in ON_OFF_LIST:
             return
         self._clean = clean.lower()
+        self._state_mode = state_mode
         await self.async_send_cmd()
 
-    async def async_set_beep(self, beep):
+    async def async_set_beep(self, beep, state_mode):
         """Set new target beep mode."""
         if beep not in ON_OFF_LIST:
             return
         self._beep = beep.lower()
+        self._state_mode = state_mode
         await self.async_send_cmd()
 
-    async def async_set_sleep(self, sleep):
+    async def async_set_sleep(self, sleep, state_mode):
         """Set new target sleep mode."""
         self._sleep = sleep.lower()
+        self._state_mode = state_mode
         await self.async_send_cmd()
 
-    async def async_set_swingv(self, swingv):
+    async def async_set_swingv(self, swingv, state_mode):
         """Set new target swingv."""
         self._swingv = swingv.lower()
         if self._swingv != "auto":
@@ -1013,9 +1055,10 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             else:
                 if SWING_VERTICAL in self._swing_list:
                     self._swing_mode = SWING_VERTICAL
+        self._state_mode = state_mode
         await self.async_send_cmd()
 
-    async def async_set_swingh(self, swingh):
+    async def async_set_swingh(self, swingh, state_mode):
         """Set new target swingh."""
         self._swingh = swingh.lower()
         if self._swingh != "auto":
@@ -1032,6 +1075,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             else:
                 if SWING_HORIZONTAL in self._swing_list:
                     self._swing_mode = SWING_HORIZONTAL
+        self._state_mode = state_mode
         await self.async_send_cmd()
 
     async def _async_power_sensor_changed(self, entity_id, old_state, new_state):
@@ -1177,7 +1221,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
 
         # Populate the payload
         payload_data = {
-            "StateMode": "SendStore",
+            "StateMode": self._state_mode,
             "Vendor": self._vendor,
             "Model": self._model,
             "Power": self.power_mode,
@@ -1198,6 +1242,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             "Clock": int(_min),
             "Weekday": int(_dt.weekday()),
         }
+        self._state_mode = DEFAULT_STATE_MODE
         for key in self._toggle_list:
             setattr(self, '_' + key.lower(), 'off')
 
