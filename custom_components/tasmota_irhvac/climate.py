@@ -141,6 +141,7 @@ from .const import (
     CONF_SWINGV,
     CONF_SWINGH,
     CONF_TOGGLE_LIST,
+    CONF_IGNORE_OFF_TEMP,
     DATA_KEY,
     DOMAIN,
     DEFAULT_NAME,
@@ -164,6 +165,7 @@ from .const import (
     DEFAULT_CONF_SLEEP,
     DEFAULT_CONF_KEEP_MODE,
     DEFAULT_STATE_MODE,
+    DEFAULT_IGNORE_OFF_TEMP,
     ON_OFF_LIST,
     STATE_MODE_LIST,
     SERVICE_ECONO_MODE,
@@ -277,6 +279,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
             cv.ensure_list,
             [vol.In(TOGGLE_ALL_LIST)],
         ),
+        vol.Optional(CONF_IGNORE_OFF_TEMP, default=DEFAULT_IGNORE_OFF_TEMP): cv.boolean,
     }
 )
 
@@ -521,6 +524,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._fix_swingh = None
         self._toggle_list = config[CONF_TOGGLE_LIST]
         self._state_mode = DEFAULT_STATE_MODE
+        self._ignore_off_temp = config[CONF_IGNORE_OFF_TEMP]
 
         availability_topic = config.get(CONF_AVAILABILITY_TOPIC)
         if (availability_topic) is None:
@@ -626,7 +630,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 return
 
             payload = json_payload["IRHVAC"]
-
+            
             if payload["Vendor"] == self._vendor:
                 # All values in the payload are Optional
                 prev_power = self.power_mode
@@ -639,7 +643,10 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                         self._hvac_mode = HVAC_MODE_FAN_ONLY
                 if "Temp" in payload:
                     if payload["Temp"] > 0:
-                        self._target_temp = payload["Temp"]
+                        if self.power_mode == STATE_OFF and self._ignore_off_temp:
+                            self._target_temp = self._target_temp
+                        else:
+                            self._target_temp = payload["Temp"]
                 if "Celsius" in payload:
                     self._celsius = payload["Celsius"].lower()
                 if "Quiet" in payload:

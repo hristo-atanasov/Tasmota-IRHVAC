@@ -81,3 +81,6 @@ climate:
       #- SwingH
       #- SwingV
       #- Turbo
+# When turning off some devices with their remote control they are set to the lowest temperature
+# and this is shown on the thermostat card. Setting `ignore_off_temp` value to True will keep the last target temperature displayed on the card.
+ignore_off_temp: False #optional - default False boolean value
