@@ -209,6 +209,7 @@ set_swingv:
             - "off"
             - "auto"
             - "highest"
+            - "high"
             - "middle"
             - "low"
             - "lowest"
