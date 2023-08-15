@@ -14,7 +14,7 @@ set_econo:
             - "off"
             - "on"
     state_mode:
-      description: Sets StateMode in MQTT message. Defailt is "SendStore".
+      description: Sets StateMode in MQTT message. Default is "SendStore".
       example: "StoreOnly"
       required: false
       selector:
@@ -39,7 +39,7 @@ set_turbo:
             - "off"
             - "on"
     state_mode:
-      description: Sets StateMode in MQTT message. Defailt is "SendStore".
+      description: Sets StateMode in MQTT message. Default is "SendStore".
       example: "StoreOnly"
       required: false
       selector:
@@ -64,7 +64,7 @@ set_filters:
             - "off"
             - "on"
     state_mode:
-      description: Sets StateMode in MQTT message. Defailt is "SendStore".
+      description: Sets StateMode in MQTT message. Default is "SendStore".
       example: "StoreOnly"
       required: false
       selector:
@@ -89,7 +89,7 @@ set_light:
             - "off"
             - "on"
     state_mode:
-      description: Sets StateMode in MQTT message. Defailt is "SendStore".
+      description: Sets StateMode in MQTT message. Default is "SendStore".
       example: "StoreOnly"
       required: false
       selector:
@@ -114,7 +114,7 @@ set_quiet:
             - "off"
             - "on"
     state_mode:
-      description: Sets StateMode in MQTT message. Defailt is "SendStore".
+      description: Sets StateMode in MQTT message. Default is "SendStore".
       example: "StoreOnly"
       required: false
       selector:
@@ -139,7 +139,7 @@ set_clean:
             - "off"
             - "on"
     state_mode:
-      description: Sets StateMode in MQTT message. Defailt is "SendStore".
+      description: Sets StateMode in MQTT message. Default is "SendStore".
       example: "StoreOnly"
       required: false
       selector:
@@ -164,7 +164,7 @@ set_beep:
             - "off"
             - "on"
     state_mode:
-      description: Sets StateMode in MQTT message. Defailt is "SendStore".
+      description: Sets StateMode in MQTT message. Default is "SendStore".
       example: "StoreOnly"
       required: false
       selector:
@@ -184,7 +184,7 @@ set_sleep:
       example: "0"
       required: true
     state_mode:
-      description: Sets StateMode in MQTT message. Defailt is "SendStore".
+      description: Sets StateMode in MQTT message. Default is "SendStore".
       example: "StoreOnly"
       required: false
       selector:
@@ -214,7 +214,7 @@ set_swingv:
             - "low"
             - "lowest"
     state_mode:
-      description: Sets StateMode in MQTT message. Defailt is "SendStore".
+      description: Sets StateMode in MQTT message. Default is "SendStore".
       example: "StoreOnly"
       required: false
       selector:
@@ -246,7 +246,7 @@ set_swingh:
             - "right max"
             - "wide"
     state_mode:
-      description: Sets StateMode in MQTT message. Defailt is "SendStore".
+      description: Sets StateMode in MQTT message. Default is "SendStore".
       example: "StoreOnly"
       required: false
       selector:
