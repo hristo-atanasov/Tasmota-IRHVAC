@@ -103,8 +103,7 @@ DEFAULT_TARGET_TEMP = 26
 DEFAULT_MIN_TEMP = 16
 DEFAULT_MAX_TEMP = 32
 DEFAULT_PRECISION = 1
-DEFAULT_FAN_LIST = [HVAC_FAN_AUTO_MAX,
-                    HVAC_FAN_MAX_HIGH, HVAC_FAN_MEDIUM, HVAC_FAN_MIN]
+DEFAULT_FAN_LIST = [HVAC_FAN_AUTO_MAX, HVAC_FAN_MAX_HIGH, HVAC_FAN_MEDIUM, HVAC_FAN_MIN]
 DEFAULT_CONF_QUIET = "off"
 DEFAULT_CONF_TURBO = "off"
 DEFAULT_CONF_ECONO = "off"
@@ -122,75 +121,65 @@ DEFAULT_IGNORE_OFF_TEMP = False
 ATTR_NAME = "name"
 ATTR_VALUE = "value"
 
-DATA_KEY = 'tasmota_irhvac.climate'
-DOMAIN = 'tasmota_irhvac'
+DATA_KEY = "tasmota_irhvac.climate"
+DOMAIN = "tasmota_irhvac"
 
-ATTR_ECONO = 'econo'
-ATTR_TURBO = 'turbo'
-ATTR_QUIET = 'quiet'
-ATTR_LIGHT = 'light'
-ATTR_FILTERS = 'filters'
-ATTR_CLEAN = 'clean'
-ATTR_BEEP = 'beep'
-ATTR_SLEEP = 'sleep'
-ATTR_LAST_ON_MODE = 'last_on_mode'
-ATTR_SWINGV = 'swingv'
-ATTR_SWINGH = 'swingh'
-ATTR_FIX_SWINGV = 'fix_swingv'
-ATTR_FIX_SWINGH = 'fix_swingh'
-ATTR_STATE_MODE = 'state_mode'
+ATTR_ECONO = "econo"
+ATTR_TURBO = "turbo"
+ATTR_QUIET = "quiet"
+ATTR_LIGHT = "light"
+ATTR_FILTERS = "filters"
+ATTR_CLEAN = "clean"
+ATTR_BEEP = "beep"
+ATTR_SLEEP = "sleep"
+ATTR_LAST_ON_MODE = "last_on_mode"
+ATTR_SWINGV = "swingv"
+ATTR_SWINGH = "swingh"
+ATTR_FIX_SWINGV = "fix_swingv"
+ATTR_FIX_SWINGH = "fix_swingh"
+ATTR_STATE_MODE = "state_mode"
 
-SERVICE_ECONO_MODE = 'set_econo'
-SERVICE_TURBO_MODE = 'set_turbo'
-SERVICE_QUIET_MODE = 'set_quiet'
-SERVICE_LIGHT_MODE = 'set_light'
-SERVICE_FILTERS_MODE = 'set_filters'
-SERVICE_CLEAN_MODE = 'set_clean'
-SERVICE_BEEP_MODE = 'set_beep'
-SERVICE_SLEEP_MODE = 'set_sleep'
-SERVICE_SET_SWINGV = 'set_swingv'
-SERVICE_SET_SWINGH = 'set_swingh'
+SERVICE_ECONO_MODE = "set_econo"
+SERVICE_TURBO_MODE = "set_turbo"
+SERVICE_QUIET_MODE = "set_quiet"
+SERVICE_LIGHT_MODE = "set_light"
+SERVICE_FILTERS_MODE = "set_filters"
+SERVICE_CLEAN_MODE = "set_clean"
+SERVICE_BEEP_MODE = "set_beep"
+SERVICE_SLEEP_MODE = "set_sleep"
+SERVICE_SET_SWINGV = "set_swingv"
+SERVICE_SET_SWINGH = "set_swingh"
 
 # Map attributes to properties of the state object
 ATTRIBUTES_IRHVAC = {
-    ATTR_ECONO: 'econo',
-    ATTR_TURBO: 'turbo',
-    ATTR_QUIET: 'quiet',
-    ATTR_LIGHT: 'light',
-    ATTR_FILTERS: 'filter',
-    ATTR_CLEAN: 'clean',
-    ATTR_BEEP: 'beep',
-    ATTR_SLEEP: 'sleep',
-    ATTR_LAST_ON_MODE: 'last_on_mode',
-    ATTR_SWINGV: 'swingv',
-    ATTR_SWINGH: 'swingh',
-    ATTR_FIX_SWINGV: 'fix_swingv',
-    ATTR_FIX_SWINGH: 'fix_swingh',
+    ATTR_ECONO: "econo",
+    ATTR_TURBO: "turbo",
+    ATTR_QUIET: "quiet",
+    ATTR_LIGHT: "light",
+    ATTR_FILTERS: "filter",
+    ATTR_CLEAN: "clean",
+    ATTR_BEEP: "beep",
+    ATTR_SLEEP: "sleep",
+    ATTR_LAST_ON_MODE: "last_on_mode",
+    ATTR_SWINGV: "swingv",
+    ATTR_SWINGH: "swingh",
+    ATTR_FIX_SWINGV: "fix_swingv",
+    ATTR_FIX_SWINGH: "fix_swingh",
 }
 
-ON_OFF_LIST = [
-    'ON',
-    'OFF',
-    'On',
-    'Off',
-    'on',
-    'off'
-]
+ON_OFF_LIST = ["ON", "OFF", "On", "Off", "on", "off"]
 
 TOGGLE_ALL_LIST = [
-    'SwingV',
-    'SwingH',
-    'Quiet',
-    'Turbo',
-    'Econo',
-    'Light',
-    'Filter',
-    'Clean',
-    'Beep',
-    'Sleep',
+    "SwingV",
+    "SwingH",
+    "Quiet",
+    "Turbo",
+    "Econo",
+    "Light",
+    "Filter",
+    "Clean",
+    "Beep",
+    "Sleep",
 ]
 
-STATE_MODE_LIST = [
-    'StoreOnly',
-    'SendStore'
-]
+STATE_MODE_LIST = ["StoreOnly", "SendStore"]
