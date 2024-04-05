@@ -4,6 +4,7 @@
   "version": "2023.05.31",
   "documentation": "https://github.com/hristo-atanasov/Tasmota-IRHVAC",
   "issue_tracker": "https://github.com/hristo-atanasov/Tasmota-IRHVAC/issues",
+  "homeassistant": "2022.5.0",
   "requirements": [],
   "dependencies": [
     "mqtt",

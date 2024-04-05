@@ -33,25 +33,15 @@ from homeassistant.components.climate.const import (
     FAN_MIDDLE,
     FAN_OFF,
     FAN_ON,
-    HVAC_MODE_DRY,
+    HVACMode,
+    HVACAction,
     ATTR_PRESET_MODE,
     ATTR_FAN_MODE,
     ATTR_SWING_MODE,
     ATTR_HVAC_MODE,
-    HVAC_MODE_COOL,
-    HVAC_MODE_HEAT,
-    HVAC_MODE_OFF,
-    CURRENT_HVAC_HEAT,
-    CURRENT_HVAC_COOL,
-    CURRENT_HVAC_DRY,
-    CURRENT_HVAC_FAN,
-    CURRENT_HVAC_OFF,
     PRESET_AWAY,
     PRESET_NONE,
-    SUPPORT_FAN_MODE,
-    SUPPORT_SWING_MODE,
-    SUPPORT_PRESET_MODE,
-    SUPPORT_TARGET_TEMPERATURE,
+    ClimateEntityFeature,
     SWING_BOTH,
     SWING_HORIZONTAL,
     SWING_OFF,
@@ -63,7 +53,6 @@ from homeassistant.const import (
     ATTR_TEMPERATURE,
     CONF_NAME,
     CONF_UNIQUE_ID,
-    EVENT_HOMEASSISTANT_START,
     PRECISION_HALVES,
     PRECISION_TENTHS,
     PRECISION_WHOLE,
@@ -74,7 +63,6 @@ from homeassistant.const import (
 )
 
 from .const import (
-    ATTR_VALUE,
     ATTR_ECONO,
     ATTR_TURBO,
     ATTR_QUIET,
@@ -89,10 +77,6 @@ from .const import (
     ATTR_STATE_MODE,
     ATTRIBUTES_IRHVAC,
     STATE_AUTO,
-    STATE_COOL,
-    STATE_DRY,
-    STATE_FAN_ONLY,
-    STATE_HEAT,
     HVAC_FAN_AUTO,
     HVAC_FAN_MIN,
     HVAC_FAN_MEDIUM,
@@ -101,13 +85,6 @@ from .const import (
     HVAC_MODE_FAN_AUTO,
     HVAC_FAN_MAX_HIGH,
     HVAC_FAN_AUTO_MAX,
-    HVAC_MODE_OFF,
-    HVAC_MODE_HEAT,
-    HVAC_MODE_COOL,
-    HVAC_MODE_HEAT_COOL,
-    HVAC_MODE_AUTO,
-    HVAC_MODE_DRY,
-    HVAC_MODE_FAN_ONLY,
     HVAC_MODES,
     CONF_EXCLUSIVE_GROUP_VENDOR,
     CONF_VENDOR,
@@ -183,19 +160,22 @@ from .const import (
 )
 
 DEFAULT_MODES_LIST = [
-    HVAC_MODE_COOL,
-    HVAC_MODE_HEAT,
-    HVAC_MODE_DRY,
+    HVACMode.COOL,
+    HVACMode.HEAT,
+    HVACMode.DRY,
     HVAC_MODE_AUTO_FAN,
     HVAC_MODE_FAN_AUTO,
 ]
 
 DEFAULT_SWING_LIST = [SWING_OFF, SWING_VERTICAL]
-DEFAULT_INITIAL_OPERATION_MODE = HVAC_MODE_OFF
+DEFAULT_INITIAL_OPERATION_MODE = HVACMode.OFF
 
 _LOGGER = logging.getLogger(__name__)
 
-SUPPORT_FLAGS = SUPPORT_TARGET_TEMPERATURE | SUPPORT_FAN_MODE
+SUPPORT_FLAGS = ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.FAN_MODE
+
+if hasattr(ClimateEntityFeature, "TURN_ON"):
+    SUPPORT_FLAGS |= ClimateEntityFeature.TURN_ON | ClimateEntityFeature.TURN_OFF
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -477,6 +457,10 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     """Representation of a Generic Thermostat device."""
 
+    # It can remove from HA >= 2025.1
+    # see https://developers.home-assistant.io/blog/2024/01/24/climate-climateentityfeatures-expanded/
+    _enable_turn_on_off_backwards_compatibility = False
+
     def __init__(
         self,
         hass,
@@ -516,9 +500,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._unit = hass.config.units.temperature_unit
         self._support_flags = SUPPORT_FLAGS
         if self._away_temp is not None:
-            self._support_flags = self._support_flags | SUPPORT_PRESET_MODE
+            self._support_flags = self._support_flags | ClimateEntityFeature.PRESET_MODE
         if self._swing_mode is not None:
-            self._support_flags = self._support_flags | SUPPORT_SWING_MODE
+            self._support_flags = self._support_flags | ClimateEntityFeature.SWING_MODE
         self._is_away = False
         self._modes_list = config[CONF_MODES_LIST]
         self._quiet = config[CONF_QUIET].lower()
@@ -596,7 +580,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                     setattr(self, "_" + prop, val)
             if old_state.state:
                 self._hvac_mode = old_state.state
-                self._enabled = self._hvac_mode != HVAC_MODE_OFF
+                self._enabled = self._hvac_mode != HVACMode.OFF
                 if self._enabled:
                     self._last_on_mode = self._hvac_mode
             if self._swingv != "auto":
@@ -611,7 +595,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 "No previously saved temperature, setting to %s", self._target_temp
             )
 
-        if self._hvac_mode is HVAC_MODE_OFF:
+        if self._hvac_mode is HVACMode.OFF:
             self.power_mode = STATE_OFF
             self._enabled = False
         else:
@@ -680,8 +664,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 if "Mode" in payload:
                     self._hvac_mode = payload["Mode"].lower()
                     # Some vendors send/receive mode as fan instead of fan_only
-                    if self._hvac_mode == CURRENT_HVAC_FAN:
-                        self._hvac_mode = HVAC_MODE_FAN_ONLY
+                    if self._hvac_mode == HVACAction.FAN:
+                        self._hvac_mode = HVACMode.FAN_ONLY
                 if "Temp" in payload:
                     if payload["Temp"] > 0:
                         if self.power_mode == STATE_OFF and self._ignore_off_temp:
@@ -760,12 +744,12 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                         self._fan_mode = fan_mode
                     _LOGGER.debug(self._fan_mode)
 
-                if self._hvac_mode is not HVAC_MODE_OFF:
+                if self._hvac_mode is not HVACMode.OFF:
                     self._last_on_mode = self._hvac_mode
 
                 # Set default state to off
                 if self.power_mode == STATE_OFF:
-                    self._hvac_mode = HVAC_MODE_OFF
+                    self._hvac_mode = HVACMode.OFF
                     self._enabled = False
                 else:
                     self._enabled = True
@@ -876,7 +860,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     def hvac_mode(self):
         """Return current operation."""
         return (
-            HVAC_MODE_OFF
+            HVACMode.OFF
             if self._hvac_mode in [STATE_UNKNOWN, STATE_UNAVAILABLE]
             else self._hvac_mode
         )
@@ -887,16 +871,16 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
 
         Need to be one of CURRENT_HVAC_*.
         """
-        if self._hvac_mode == HVAC_MODE_OFF:
-            return CURRENT_HVAC_OFF
-        elif self._hvac_mode == HVAC_MODE_HEAT:
-            return CURRENT_HVAC_HEAT
-        elif self._hvac_mode == HVAC_MODE_COOL:
-            return CURRENT_HVAC_COOL
-        elif self._hvac_mode == HVAC_MODE_DRY:
-            return CURRENT_HVAC_DRY
-        elif self._hvac_mode == HVAC_MODE_FAN_ONLY:
-            return CURRENT_HVAC_FAN
+        if self._hvac_mode == HVACMode.OFF:
+            return HVACAction.OFF
+        elif self._hvac_mode == HVACMode.HEAT:
+            return HVACAction.HEATING
+        elif self._hvac_mode == HVACMode.COOL:
+            return HVACAction.COOLING
+        elif self._hvac_mode == HVACMode.DRY:
+            return HVACAction.DRYING
+        elif self._hvac_mode == HVACMode.FAN_ONLY:
+            return HVACAction.FAN
 
     @property
     def target_temperature(self):
@@ -982,7 +966,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
 
     async def async_turn_off(self):
         """Turn thermostat off."""
-        self._hvac_mode = HVAC_MODE_OFF
+        self._hvac_mode = HVACMode.OFF
         self.power_mode = STATE_OFF
         await self.async_send_cmd()
 
@@ -997,7 +981,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             await self.set_mode(hvac_mode)
 
         self._target_temp = temperature
-        if not self._hvac_mode == HVAC_MODE_OFF:
+        if not self._hvac_mode == HVACMode.OFF:
             self.power_mode = STATE_ON
         await self.async_send_cmd()
 
@@ -1024,7 +1008,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 _LOGGER.error(self._fan_list)
                 return
         self._fan_mode = fan_mode
-        if not self._hvac_mode == HVAC_MODE_OFF:
+        if not self._hvac_mode == HVACMode.OFF:
             self.power_mode = STATE_ON
         await self.async_send_cmd()
 
@@ -1038,7 +1022,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             return
         self._swing_mode = swing_mode
         # note: set _swingv and _swingh in send_ir() later
-        if not self._hvac_mode == HVAC_MODE_OFF:
+        if not self._hvac_mode == HVACMode.OFF:
             self.power_mode = STATE_ON
         await self.async_send_cmd()
 
@@ -1153,7 +1137,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             return
 
         if new_state.state == STATE_ON:
-            if self._hvac_mode == HVAC_MODE_OFF or self.power_mode == STATE_OFF:
+            if self._hvac_mode == HVACMode.OFF or self.power_mode == STATE_OFF:
                 if self._last_on_mode is not None:
                     self._hvac_mode = self._last_on_mode
                 else:
@@ -1162,8 +1146,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 self.async_write_ha_state()
 
         elif new_state.state == STATE_OFF:
-            if self._hvac_mode != HVAC_MODE_OFF or self.power_mode == STATE_ON:
-                self._hvac_mode = HVAC_MODE_OFF
+            if self._hvac_mode != HVACMode.OFF or self.power_mode == STATE_ON:
+                self._hvac_mode = HVACMode.OFF
                 self.power_mode = STATE_OFF
                 self.async_write_ha_state()
 
@@ -1250,8 +1234,8 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
     async def set_mode(self, hvac_mode):
         """Set hvac mode."""
         hvac_mode = hvac_mode.lower()
-        if hvac_mode not in self._hvac_list or hvac_mode == HVAC_MODE_OFF:
-            self._hvac_mode = HVAC_MODE_OFF
+        if hvac_mode not in self._hvac_list or hvac_mode == HVACMode.OFF:
+            self._hvac_mode = HVACMode.OFF
             self._enabled = False
             self.power_mode = STATE_OFF
         else:

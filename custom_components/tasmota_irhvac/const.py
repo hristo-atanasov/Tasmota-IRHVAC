@@ -1,5 +1,7 @@
 """Provides the constants needed for component."""
 
+from homeassistant.components.climate.const import HVACMode
+
 # States
 STATE_AUTO = "auto"
 STATE_COOL = "cool"
@@ -23,37 +25,15 @@ HVAC_MODE_FAN_AUTO = "fan_only_auto"
 HVAC_FAN_MAX_HIGH = "max_high"
 HVAC_FAN_AUTO_MAX = "auto_max"
 
-# All activity disabled / Device is off/standby
-HVAC_MODE_OFF = "off"
-
-# Heating
-HVAC_MODE_HEAT = "heat"
-
-# Cooling
-HVAC_MODE_COOL = "cool"
-
-# The device supports heating/cooling to a range
-HVAC_MODE_HEAT_COOL = "heat_cool"
-
-# The temperature is set based on a schedule, learned behavior, AI or some
-# other related mechanism. User is not able to adjust the temperature
-HVAC_MODE_AUTO = "auto"
-
-# Device is in Dry/Humidity mode
-HVAC_MODE_DRY = "dry"
-
-# Only the fan is on, not fan and another mode like cool
-HVAC_MODE_FAN_ONLY = "fan_only"
-
 # Hvac moed list
 HVAC_MODES = [
-    HVAC_MODE_OFF,
-    HVAC_MODE_HEAT,
-    HVAC_MODE_COOL,
-    HVAC_MODE_HEAT_COOL,
-    HVAC_MODE_AUTO,
-    HVAC_MODE_DRY,
-    HVAC_MODE_FAN_ONLY,
+    HVACMode.OFF,
+    HVACMode.HEAT,
+    HVACMode.COOL,
+    HVACMode.HEAT_COOL,
+    HVACMode.AUTO,
+    HVACMode.DRY,
+    HVACMode.FAN_ONLY,
     HVAC_MODE_AUTO_FAN,
     HVAC_MODE_FAN_AUTO,
 ]
