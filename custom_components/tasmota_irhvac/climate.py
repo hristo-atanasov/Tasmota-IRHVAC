@@ -566,6 +566,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         MqttAvailability.__init__(self, mqtt_availability_config)
 
     async def async_added_to_hass(self):
+        # Make sure MQTT integration is enabled and the client is available
+        await mqtt.async_wait_for_mqtt_client(self.hass)
+
         """Run when entity about to be added."""
         await super().async_added_to_hass()
 
