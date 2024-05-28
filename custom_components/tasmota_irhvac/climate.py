@@ -20,7 +20,8 @@ try:
 except ImportError:
     from homeassistant.components.binary_sensor import ClimateDevice as ClimateEntity
 from homeassistant.core import callback
-from homeassistant.helpers.event import async_track_state_change
+
+from homeassistant.helpers import event as ha_event
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from homeassistant.components.climate.const import (
@@ -533,6 +534,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._toggle_list = config[CONF_TOGGLE_LIST]
         self._state_mode = DEFAULT_STATE_MODE
         self._ignore_off_temp = config[CONF_IGNORE_OFF_TEMP]
+        self._use_track_state_change_event = False
 
         availability_topic = config.get(CONF_AVAILABILITY_TOPIC)
         if (availability_topic) is None:
@@ -550,6 +552,21 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         MqttAvailability.__init__(self, mqtt_availability_config)
 
     async def async_added_to_hass(self):
+        # Replacing `async_track_state_change` with `async_track_state_change_event`
+        # See, https://developers.home-assistant.io/blog/2024/04/13/deprecate_async_track_state_change/
+        if hasattr(ha_event, "async_track_state_change_event"):
+            self._use_track_state_change_event = True
+
+        def regist_track_state_change_event(entity_id):
+            if self._use_track_state_change_event:
+                ha_event.async_track_state_change_event(
+                    self.hass, entity_id, self._async_sensor_changed
+                )
+            else:
+                ha_event.async_track_state_change(
+                    self.hass, entity_id, self._async_sensor_changed
+                )
+
         # Make sure MQTT integration is enabled and the client is available
         await mqtt.async_wait_for_mqtt_client(self.hass)
 
@@ -606,9 +623,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
             setattr(self, "_" + key.lower(), "off")
 
         if self._temp_sensor:
-            async_track_state_change(
-                self.hass, self._temp_sensor, self._async_sensor_changed
-            )
+            regist_track_state_change_event(self._temp_sensor)
 
             temp_sensor_state = self.hass.states.get(self._temp_sensor)
             if (
@@ -619,9 +634,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 self._async_update_temp(temp_sensor_state)
 
         if self._humidity_sensor:
-            async_track_state_change(
-                self.hass, self._humidity_sensor, self._async_humidity_sensor_changed
-            )
+            regist_track_state_change_event(self._humidity_sensor)
 
             humidity_sensor_state = self.hass.states.get(self._humidity_sensor)
             if (
@@ -632,9 +645,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 self._async_update_humidity(humidity_sensor_state)
 
         if self._power_sensor:
-            async_track_state_change(
-                self.hass, self._power_sensor, self._async_power_sensor_changed
-            )
+            regist_track_state_change_event(self._power_sensor)
 
     async def _subscribe_topics(self):
         """(Re)Subscribe to topics."""
@@ -770,9 +781,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 ):
                     await asyncio.sleep(3)
                     state = self.hass.states.get(self._power_sensor)
-                    await self._async_power_sensor_changed(
-                        self._power_sensor, None, state
-                    )
+                    await self._async_power_sensor_changed(None, state)
 
         topics = {
             CONF_STATE_TOPIC: {
@@ -1128,29 +1137,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._state_mode = state_mode
         await self.async_send_cmd()
 
-    async def _async_power_sensor_changed(self, entity_id, old_state, new_state):
-        """Handle power sensor changes."""
-        if new_state is None:
-            return
-
-        if old_state is not None and new_state.state == old_state.state:
-            return
-
-        if new_state.state == STATE_ON:
-            if self._hvac_mode == HVACMode.OFF or self.power_mode == STATE_OFF:
-                if self._last_on_mode is not None:
-                    self._hvac_mode = self._last_on_mode
-                else:
-                    self._hvac_mode = STATE_ON
-                self.power_mode = STATE_ON
-                self.async_write_ha_state()
-
-        elif new_state.state == STATE_OFF:
-            if self._hvac_mode != HVACMode.OFF or self.power_mode == STATE_ON:
-                self._hvac_mode = HVACMode.OFF
-                self.power_mode = STATE_OFF
-                self.async_write_ha_state()
-
     async def async_send_cmd(self):
         await self.send_ir()
         self.async_write_ha_state()
@@ -1173,21 +1159,52 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         # Get default temp from super class
         return super().max_temp
 
-    async def _async_sensor_changed(self, entity_id, old_state, new_state):
-        """Handle temperature changes."""
+    async def _async_sensor_changed(
+        self, entity_id_or_event, old_state=None, new_state=None
+    ):
+        # Replacing `async_track_state_change` with `async_track_state_change_event`
+        # See, https://developers.home-assistant.io/blog/2024/04/13/deprecate_async_track_state_change/
+        if self._use_track_state_change_event:
+            entity_id = entity_id_or_event.data["entity_id"]
+            old_state = entity_id_or_event.data["old_state"]
+            new_state = entity_id_or_event.data["new_state"]
+        else:
+            entity_id = entity_id_or_event
+
         if new_state is None:
             return
 
-        self._async_update_temp(new_state)
-        self.async_write_ha_state()
+        if entity_id == self._temp_sensor:
+            self._async_update_temp(new_state)
+            self.async_write_ha_state()
+        elif entity_id == self._humidity_sensor:
+            self._async_update_humidity(new_state)
+            self.async_write_ha_state()
+        elif entity_id == self._power_sensor:
+            await self._async_power_sensor_changed(old_state, new_state)
 
-    async def _async_humidity_sensor_changed(self, entity_id, old_state, new_state):
-        """Handle humidity sensor changes."""
+    async def _async_power_sensor_changed(self, old_state, new_state):
+        """Handle power sensor changes."""
         if new_state is None:
             return
 
-        self._async_update_humidity(new_state)
-        self.async_write_ha_state()
+        if old_state is not None and new_state.state == old_state.state:
+            return
+
+        if new_state.state == STATE_ON:
+            if self._hvac_mode == HVACMode.OFF or self.power_mode == STATE_OFF:
+                if self._last_on_mode is not None:
+                    self._hvac_mode = self._last_on_mode
+                else:
+                    self._hvac_mode = STATE_ON
+                self.power_mode = STATE_ON
+                self.async_write_ha_state()
+
+        elif new_state.state == STATE_OFF:
+            if self._hvac_mode != HVACMode.OFF or self.power_mode == STATE_ON:
+                self._hvac_mode = HVACMode.OFF
+                self.power_mode = STATE_OFF
+                self.async_write_ha_state()
 
     @callback
     def _async_update_temp(self, state):
