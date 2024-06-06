@@ -44,6 +44,7 @@ CONF_VENDOR = "vendor"
 CONF_PROTOCOL = "protocol"  # Soon to be deprecated
 CONF_COMMAND_TOPIC = "command_topic"
 CONF_STATE_TOPIC = "state_topic"
+CONF_AVAILABILITY_TOPIC = "availability_topic"
 CONF_TEMP_SENSOR = "temperature_sensor"
 CONF_HUMIDITY_SENSOR = "humidity_sensor"
 CONF_POWER_SENSOR = "power_sensor"

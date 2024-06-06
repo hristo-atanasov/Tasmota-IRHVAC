@@ -8,11 +8,12 @@ import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
 
 from homeassistant.components import mqtt
-from homeassistant.components.mqtt.mixins import (
-    MqttAvailability,
-    MQTT_AVAILABILITY_SCHEMA,
-    CONF_AVAILABILITY_TOPIC,
-)
+
+try:
+    from homeassistant.components.mqtt.schemas import MQTT_AVAILABILITY_SCHEMA
+except ImportError:
+    from homeassistant.components.mqtt.mixins import MQTT_AVAILABILITY_SCHEMA
+
 from homeassistant.components.climate import PLATFORM_SCHEMA
 
 try:
@@ -77,6 +78,7 @@ from .const import (
     ATTR_LAST_ON_MODE,
     ATTR_STATE_MODE,
     ATTRIBUTES_IRHVAC,
+    CONF_AVAILABILITY_TOPIC,
     STATE_AUTO,
     HVAC_FAN_AUTO,
     HVAC_FAN_MIN,
@@ -455,7 +457,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         )
 
 
-class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
+class TasmotaIrhvac(ClimateEntity, RestoreEntity):
     """Representation of a Generic Thermostat device."""
 
     # It can remove from HA >= 2025.1
@@ -536,20 +538,10 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._ignore_off_temp = config[CONF_IGNORE_OFF_TEMP]
         self._use_track_state_change_event = False
 
-        availability_topic = config.get(CONF_AVAILABILITY_TOPIC)
-        if (availability_topic) is None:
+        self.availability_topic = config.get(CONF_AVAILABILITY_TOPIC)
+        if (self.availability_topic) is None:
             path = self.topic.split("/")
-            availability_topic = "tele/" + path[1] + "/LWT"
-
-        mqtt_availability_config = config
-        mqtt_availability_config.update(
-            {
-                CONF_AVAILABILITY_TOPIC: availability_topic,
-                "payload_available": "Online",
-                "payload_not_available": "Offline",
-            }
-        )
-        MqttAvailability.__init__(self, mqtt_availability_config)
+            self.availability_topic = "tele/" + path[1] + "/LWT"
 
     async def async_added_to_hass(self):
         # Replacing `async_track_state_change` with `async_track_state_change_event`
@@ -649,6 +641,14 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
 
     async def _subscribe_topics(self):
         """(Re)Subscribe to topics."""
+
+        @callback
+        async def available_message_received(msg):
+            _LOGGER.info(msg)
+            if msg == "Online" or msg == "Offline":
+                self._attr_available = True if msg == "Online" else False
+                self.async_schedule_update_ha_state()
+                self.async_write_ha_state()
 
         @callback
         async def state_message_received(msg):
@@ -788,7 +788,12 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
                 "topic": self.state_topic,
                 "msg_callback": state_message_received,
                 "qos": 1,
-            }
+            },
+            # CONF_AVAILABILITY_TOPIC: {
+            #     "topic": self.availability_topic,
+            #     "msg_callback": available_message_received,
+            #     "qos": 1,
+            # },
         }
 
         if hasattr(mqtt.subscription, "async_prepare_subscribe_topics"):
@@ -814,7 +819,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity, MqttAvailability):
         self._sub_state = await mqtt.subscription.async_unsubscribe_topics(
             self.hass, self._sub_state
         )
-        await MqttAvailability.async_will_remove_from_hass(self)
 
     @property
     def extra_state_attributes(self):
