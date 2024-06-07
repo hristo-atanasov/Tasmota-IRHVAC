@@ -196,6 +196,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(
             CONF_STATE_TOPIC, default=DEFAULT_STATE_TOPIC
         ): mqtt.valid_subscribe_topic,
+        vol.Optional(CONF_STATE_TOPIC + "_2"): mqtt.util.valid_topic,
         vol.Optional(CONF_MQTT_DELAY, default=DEFAULT_MQTT_DELAY): vol.Coerce(float),
         vol.Optional(CONF_MAX_TEMP, default=DEFAULT_MAX_TEMP): vol.Coerce(float),
         vol.Optional(CONF_MIN_TEMP, default=DEFAULT_MIN_TEMP): vol.Coerce(float),
@@ -480,6 +481,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._humidity_sensor = config.get(CONF_HUMIDITY_SENSOR)
         self._power_sensor = config.get(CONF_POWER_SENSOR)
         self.state_topic = config[CONF_STATE_TOPIC]
+        self.state_topic2 = config.get(CONF_STATE_TOPIC + "_2")
         self._hvac_mode = config[CONF_INITIAL_OPERATION_MODE]
         self._away_temp = config.get(CONF_AWAY_TEMP)
         self._saved_target_temp = config[CONF_TARGET_TEMP] or self._away_temp
@@ -537,6 +539,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         self._state_mode = DEFAULT_STATE_MODE
         self._ignore_off_temp = config[CONF_IGNORE_OFF_TEMP]
         self._use_track_state_change_event = False
+        self._unsubscribes = []
 
         self.availability_topic = config.get(CONF_AVAILABILITY_TOPIC)
         if (self.availability_topic) is None:
@@ -566,7 +569,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         await super().async_added_to_hass()
 
         # Add listener
-        await self._subscribe_topics()
+        self._unsubscribes = await self._subscribe_topics()
 
         # Check If we have an old state
         old_state = await self.async_get_last_state()
@@ -643,17 +646,17 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         """(Re)Subscribe to topics."""
 
         @callback
-        async def available_message_received(msg):
-            _LOGGER.info(msg)
+        async def available_message_received(message: mqtt.ReceiveMessage) -> None:
+            msg = message.payload
+            _LOGGER.debug(msg)
             if msg == "Online" or msg == "Offline":
                 self._attr_available = True if msg == "Online" else False
                 self.async_schedule_update_ha_state()
-                self.async_write_ha_state()
 
         @callback
-        async def state_message_received(msg):
+        async def state_message_received(message: mqtt.ReceiveMessage) -> None:
             """Handle new MQTT state messages."""
-            json_payload = json.loads(msg.payload)
+            json_payload = json.loads(message.payload)
             _LOGGER.debug(json_payload)
 
             # If listening to `tele`, result looks like: {"IrReceived":{"Protocol":"XXX", ... ,"IRHVAC":{ ... }}}
@@ -770,8 +773,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                     setattr(self, "_" + key.lower(), "off")
 
                 # Update HA UI and State
-                self.async_write_ha_state()
-                # self.async_schedule_update_ha_state()
+                self.async_schedule_update_ha_state()
 
                 # Check power sensor state
                 if (
@@ -783,42 +785,30 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                     state = self.hass.states.get(self._power_sensor)
                     await self._async_power_sensor_changed(None, state)
 
-        topics = {
-            CONF_STATE_TOPIC: {
-                "topic": self.state_topic,
-                "msg_callback": state_message_received,
-                "qos": 1,
-            },
-            # CONF_AVAILABILITY_TOPIC: {
-            #     "topic": self.availability_topic,
-            #     "msg_callback": available_message_received,
-            #     "qos": 1,
-            # },
-        }
-
-        if hasattr(mqtt.subscription, "async_prepare_subscribe_topics"):
-            # for HA Core >= 2022.3.0
-            self._sub_state = mqtt.subscription.async_prepare_subscribe_topics(
-                self.hass,
-                self._sub_state,
-                topics,
+        unsubscribe = []
+        unsubscribe.append(
+            await mqtt.async_subscribe(
+                self.hass, self.state_topic, state_message_received
+            )
+        )
+        unsubscribe.append(
+            await mqtt.async_subscribe(
+                self.hass, self.availability_topic, available_message_received
+            )
+        )
+        if self.state_topic2:
+            unsubscribe.append(
+                await mqtt.async_subscribe(
+                    self.hass, self.state_topic2, state_message_received
+                )
             )
 
-            await mqtt.subscription.async_subscribe_topics(self.hass, self._sub_state)
-
-        else:
-            # for HA Core < 2022.3.0
-            self._sub_state = await mqtt.subscription.async_subscribe_topics(
-                self.hass,
-                self._sub_state,
-                topics,
-            )
+        return unsubscribe
 
     async def async_will_remove_from_hass(self):
         """Unsubscribe when removed."""
-        self._sub_state = await mqtt.subscription.async_unsubscribe_topics(
-            self.hass, self._sub_state
-        )
+        for unsubscribe in self._unsubscribes:
+            unsubscribe()
 
     @property
     def extra_state_attributes(self):
@@ -1143,7 +1133,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
 
     async def async_send_cmd(self):
         await self.send_ir()
-        self.async_write_ha_state()
 
     @property
     def min_temp(self):
@@ -1180,10 +1169,10 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
 
         if entity_id == self._temp_sensor:
             self._async_update_temp(new_state)
-            self.async_write_ha_state()
+            self.async_schedule_update_ha_state()
         elif entity_id == self._humidity_sensor:
             self._async_update_humidity(new_state)
-            self.async_write_ha_state()
+            self.async_schedule_update_ha_state()
         elif entity_id == self._power_sensor:
             await self._async_power_sensor_changed(old_state, new_state)
 
@@ -1202,13 +1191,13 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
                 else:
                     self._hvac_mode = STATE_ON
                 self.power_mode = STATE_ON
-                self.async_write_ha_state()
+                self.async_schedule_update_ha_state()
 
         elif new_state.state == STATE_OFF:
             if self._hvac_mode != HVACMode.OFF or self.power_mode == STATE_ON:
                 self._hvac_mode = HVACMode.OFF
                 self.power_mode = STATE_OFF
-                self.async_write_ha_state()
+                self.async_schedule_update_ha_state()
 
     @callback
     def _async_update_temp(self, state):
@@ -1250,7 +1239,6 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             self._is_away = False
             self._target_temp = self._saved_target_temp
         await self.send_ir()
-        self.async_write_ha_state()
 
     async def set_mode(self, hvac_mode):
         """Set hvac mode."""

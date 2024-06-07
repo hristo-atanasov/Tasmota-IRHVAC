@@ -8,6 +8,8 @@ climate:
     state_topic: "tele/your_tasmota_device/RESULT"
     # State is updated when the tasmota device completes IR transmissionm, should be pretty reliable.
     #state_topic: "stat/your_tasmota_device/RESULT"
+    # Optional second state topic, This option allows you to subscribe to both "tele" and "stat" messages.
+    #state_topic_2: "stat/your_tasmota_device/RESULT"
     # Uncomment if your 'available topic' of Tasmota IR device are different (if device in HA is disabled)
     #availability_topic: "tele/your_tasmota_device/LWT"
     temperature_sensor: sensor.kitchen_temperature
