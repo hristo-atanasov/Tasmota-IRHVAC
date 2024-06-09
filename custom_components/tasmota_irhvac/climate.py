@@ -20,7 +20,7 @@ try:
     from homeassistant.components.climate import ClimateEntity
 except ImportError:
     from homeassistant.components.binary_sensor import ClimateDevice as ClimateEntity
-from homeassistant.core import callback
+from homeassistant.core import cached_property, callback
 
 from homeassistant.helpers import event as ha_event
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -405,6 +405,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     """Set up the generic thermostat platform."""
     vendor = config.get(CONF_VENDOR)
     protocol = config.get(CONF_PROTOCOL)
+    name = config.get(CONF_NAME)
 
     if DATA_KEY not in hass.data:
         hass.data[DATA_KEY] = {}
@@ -428,7 +429,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     async def async_service_handler(service):
         """Map services to methods on TasmotaIrhvac."""
-        method = SERVICE_TO_METHOD.get(service.service)
+        method = SERVICE_TO_METHOD.get(service.service, {})
         params = {
             key: value for key, value in service.data.items() if key != ATTR_ENTITY_ID
         }
@@ -473,11 +474,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         config,
     ):
         """Initialize the thermostat."""
-        self._unique_id = config.get(CONF_UNIQUE_ID)
         self.topic = config.get(CONF_COMMAND_TOPIC)
         self.hass = hass
         self._vendor = vendor
-        self._name = config.get(CONF_NAME)
         self._temp_sensor = config.get(CONF_TEMP_SENSOR)
         self._humidity_sensor = config.get(CONF_HUMIDITY_SENSOR)
         self._power_sensor = config.get(CONF_POWER_SENSOR)
@@ -548,6 +547,9 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
             self.availability_topic = "tele/" + path[1] + "/LWT"
 
         # Set _attr_*
+        self._attr_unique_id = config.get(CONF_UNIQUE_ID)
+        self._attr_name = config.get(CONF_NAME)
+        self._attr_should_poll = False
         self._attr_temperature_unit = (
             UnitOfTemperature.CELSIUS
             if self._celsius.lower() == "on"
@@ -818,27 +820,12 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         for unsubscribe in self._unsubscribes:
             unsubscribe()
 
-    @property
+    @cached_property
     def extra_state_attributes(self):
         """Return the state attributes of the device."""
         return {
             attr: getattr(self, "_" + prop) for attr, prop in ATTRIBUTES_IRHVAC.items()
         }
-
-    @property
-    def should_poll(self):
-        """Return the polling state."""
-        return False
-
-    @property
-    def name(self):
-        """Return the name of the thermostat."""
-        return self._name
-
-    @property
-    def unique_id(self):
-        """Return a unique ID."""
-        return self._unique_id
 
     @property
     def precision(self):
@@ -1229,7 +1216,7 @@ class TasmotaIrhvac(ClimateEntity, RestoreEntity):
         """If the toggleable device is currently active."""
         return self.power_mode == STATE_ON
 
-    @property
+    @cached_property
     def supported_features(self):
         """Return the list of supported features."""
         return self._support_flags
