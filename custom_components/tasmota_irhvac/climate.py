@@ -853,13 +853,6 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         for unsubscribe in self._unsubscribes:
             unsubscribe()
 
-    # @property
-    # def extra_state_attributes(self):
-    #     """Return the state attributes of the device."""
-    #     return {
-    #         attr: getattr(self, "_" + prop) for attr, prop in ATTRIBUTES_IRHVAC.items()
-    #     }
-
     @property
     def precision(self):
         """Return the precision of the system."""
