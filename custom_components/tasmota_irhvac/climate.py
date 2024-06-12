@@ -1147,7 +1147,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         """Update thermostat with latest state from humidity sensor."""
         try:
             if state.state != STATE_UNKNOWN and state.state != STATE_UNAVAILABLE:
-                self._attr_current_humidity = int(state.state)
+                self._attr_current_humidity = int(float(state.state))
         except ValueError as ex:
             _LOGGER.error("Unable to update from humidity sensor: %s", ex)
 
