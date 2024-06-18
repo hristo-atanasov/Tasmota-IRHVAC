@@ -572,7 +572,6 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         self._attr_current_temperature = None
         self._attr_current_humidity = None
         self._attr_target_temperature = None
-        self._attr_temperature_unit = hass.config.units.temperature_unit
 
         self._support_flags = SUPPORT_FLAGS
         if self._away_temp is not None:
