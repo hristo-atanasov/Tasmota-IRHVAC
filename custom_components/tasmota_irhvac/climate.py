@@ -569,6 +569,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         self._attr_preset_modes = (
             [PRESET_NONE, PRESET_AWAY] if self._away_temp else None
         )
+        self._attr_preset_mode = None
         self._attr_current_temperature = None
         self._attr_current_humidity = None
         self._attr_target_temperature = None
