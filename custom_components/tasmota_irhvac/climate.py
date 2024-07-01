@@ -561,12 +561,14 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                     new_fan_list.append(val)
             self._attr_fan_modes = new_fan_list if len(new_fan_list) else None
         self._attr_fan_mode = (
-            self._attr_fan_modes[0] if isinstance(self._attr_fan_modes, list) else None
+            self._attr_fan_modes[0]
+            if isinstance(self._attr_fan_modes, list) and len(self._attr_fan_modes)
+            else None
         )
         self._attr_swing_modes = config.get(CONF_SWING_LIST)
         self._attr_swing_mode = (
             self._attr_swing_modes[0]
-            if isinstance(self._attr_swing_modes, list)
+            if isinstance(self._attr_swing_modes, list) and len(self._attr_swing_modes)
             else None
         )
         self._attr_preset_modes = (
