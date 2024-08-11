@@ -546,11 +546,12 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         self._attr_target_temperature_step = config[CONF_TEMP_STEP]
         self._attr_hvac_modes = config[CONF_MODES_LIST]
         self._attr_fan_modes = config.get(CONF_FAN_LIST)
-        if (
-            isinstance(self._attr_fan_modes, list)
-            and HVAC_FAN_MAX_HIGH in self._attr_fan_modes
-            and HVAC_FAN_AUTO_MAX in self._attr_fan_modes
-        ):
+        self._quirk_fan_max_high = all([
+            isinstance(self._attr_fan_modes, list),
+            HVAC_FAN_MAX_HIGH in self._attr_fan_modes,
+            HVAC_FAN_AUTO_MAX in self._attr_fan_modes,
+        ])
+        if self._quirk_fan_max_high:
             new_fan_list = []
             for val in self._attr_fan_modes:
                 if val == HVAC_FAN_MAX_HIGH:
@@ -792,9 +793,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                 if "FanSpeed" in payload:
                     fan_mode = payload["FanSpeed"].lower()
                     # ELECTRA_AC fan modes fix
-                    if HVAC_FAN_MAX_HIGH in (
-                        self._attr_fan_modes or []
-                    ) and HVAC_FAN_AUTO_MAX in (self._attr_fan_modes or []):
+                    if self._quirk_fan_max_high:
                         if fan_mode == HVAC_FAN_MAX:
                             self._attr_fan_mode = FAN_HIGH
                         elif fan_mode == HVAC_FAN_AUTO:
@@ -1183,9 +1182,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         """Send the payload to tasmota mqtt topic."""
         fan_speed = self._attr_fan_mode
         # tweak for some ELECTRA_AC devices
-        if HVAC_FAN_MAX_HIGH in (self._attr_fan_modes or []) and HVAC_FAN_AUTO_MAX in (
-            self._attr_fan_modes or []
-        ):
+        if self._quirk_fan_max_high:
             if fan_speed == FAN_HIGH:
                 fan_speed = HVAC_FAN_MAX
             elif fan_speed == HVAC_FAN_MAX:
