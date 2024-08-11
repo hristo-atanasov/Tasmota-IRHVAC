@@ -933,24 +933,12 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
     async def async_set_fan_mode(self, fan_mode):
         """Set new target fan mode."""
         if fan_mode not in (self._attr_fan_modes or []):
-            # tweak for some ELECTRA_AC devices
-            if HVAC_FAN_MAX_HIGH in (
-                self._attr_fan_modes or []
-            ) and HVAC_FAN_AUTO_MAX in (self._attr_fan_modes or []):
-                if fan_mode != FAN_HIGH and fan_mode != HVAC_FAN_MAX:
-                    _LOGGER.error(
-                        "Invalid swing mode selected. Got '%s'. Allowed modes are:",
-                        fan_mode,
-                    )
-                    _LOGGER.error(self._attr_fan_modes)
-                    return
-            else:
-                _LOGGER.error(
-                    "Invalid swing mode selected. Got '%s'. Allowed modes are:",
-                    fan_mode,
-                )
-                _LOGGER.error(self._attr_fan_modes)
-                return
+            _LOGGER.error(
+                "Invalid fan mode selected. Got '%s'. Allowed modes are:",
+                fan_mode,
+            )
+            _LOGGER.error(self._attr_fan_modes)
+            return
         self._attr_fan_mode = fan_mode
         if not self._attr_hvac_mode == HVACMode.OFF:
             self.power_mode = STATE_ON
