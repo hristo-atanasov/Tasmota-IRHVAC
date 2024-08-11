@@ -1193,14 +1193,14 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
 
     async def send_ir(self):
         """Send the payload to tasmota mqtt topic."""
-        fan_speed = self.fan_mode
+        fan_speed = self._attr_fan_mode
         # tweak for some ELECTRA_AC devices
         if HVAC_FAN_MAX_HIGH in (self._attr_fan_modes or []) and HVAC_FAN_AUTO_MAX in (
             self._attr_fan_modes or []
         ):
-            if self.fan_mode == FAN_HIGH:
+            if fan_speed == FAN_HIGH:
                 fan_speed = HVAC_FAN_MAX
-            if self.fan_mode == HVAC_FAN_MAX:
+            elif fan_speed == HVAC_FAN_MAX:
                 fan_speed = HVAC_FAN_AUTO
 
         # Set the swing mode - default off
