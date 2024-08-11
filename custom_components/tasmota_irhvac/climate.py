@@ -561,6 +561,9 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                 else:
                     new_fan_list.append(val)
             self._attr_fan_modes = new_fan_list if len(new_fan_list) else None
+        self._quirk_fan_prettify = all(mode not in (self._attr_fan_modes or []) for mode in [FAN_LOW, FAN_HIGH])
+        if self._quirk_fan_prettify and self._attr_fan_modes:
+            self._attr_fan_modes = [self.fan_prettify(mode) for mode in self._attr_fan_modes]
         self._attr_fan_mode = (
             self._attr_fan_modes[0]
             if isinstance(self._attr_fan_modes, list) and len(self._attr_fan_modes)
@@ -585,6 +588,24 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
             self._support_flags = self._support_flags | ClimateEntityFeature.PRESET_MODE
         if self._attr_swing_mode is not None:
             self._support_flags = self._support_flags | ClimateEntityFeature.SWING_MODE
+
+    def fan_prettify(self, mode):
+        if not self._quirk_fan_prettify:
+            return mode
+        if mode == HVAC_FAN_MIN:
+            return FAN_LOW
+        if mode == HVAC_FAN_MAX:
+            return FAN_HIGH
+        return mode
+
+    def fan_unprettify(self, mode):
+        if not self._quirk_fan_prettify:
+            return mode
+        if mode == FAN_LOW:
+            return HVAC_FAN_MIN
+        if mode == FAN_HIGH:
+            return HVAC_FAN_MAX
+        return mode
 
     async def async_added_to_hass(self):
         # Replacing `async_track_state_change` with `async_track_state_change_event`
@@ -799,9 +820,9 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                         elif fan_mode == HVAC_FAN_AUTO:
                             self._attr_fan_mode = HVAC_FAN_MAX
                         else:
-                            self._attr_fan_mode = fan_mode
+                            self._attr_fan_mode = self.fan_prettify(fan_mode)
                     else:
-                        self._attr_fan_mode = fan_mode
+                        self._attr_fan_mode = self.fan_prettify(fan_mode)
                     _LOGGER.debug(self._attr_fan_mode)
 
                 if self._attr_hvac_mode is not HVACMode.OFF:
@@ -1180,7 +1201,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
 
     async def send_ir(self):
         """Send the payload to tasmota mqtt topic."""
-        fan_speed = self._attr_fan_mode
+        fan_speed = self.fan_unprettify(self._attr_fan_mode)
         # tweak for some ELECTRA_AC devices
         if self._quirk_fan_max_high:
             if fan_speed == FAN_HIGH:
