@@ -10,9 +10,9 @@ import homeassistant.util.dt as dt_util
 from homeassistant.components import mqtt
 
 try:
-    from homeassistant.components.mqtt.schemas import MQTT_AVAILABILITY_SCHEMA
+    from homeassistant.components.mqtt.schemas import MQTT_ENTITY_COMMON_SCHEMA
 except ImportError:
-    from homeassistant.components.mqtt.mixins import MQTT_AVAILABILITY_SCHEMA
+    from homeassistant.components.mqtt.mixins import MQTT_ENTITY_COMMON_SCHEMA
 
 from homeassistant.components.climate import PLATFORM_SCHEMA as CLIMATE_PLATFORM_SCHEMA
 
@@ -265,7 +265,7 @@ PLATFORM_SCHEMA = CLIMATE_PLATFORM_SCHEMA.extend(
     }
 )
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(MQTT_AVAILABILITY_SCHEMA.schema)
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(MQTT_ENTITY_COMMON_SCHEMA.schema)
 if hasattr(mqtt, "MQTT_BASE_PLATFORM_SCHEMA"):
     PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(mqtt.MQTT_BASE_PLATFORM_SCHEMA.schema)
 else:
