@@ -635,7 +635,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                 self._attr_hvac_mode = (
                     HVACMode.OFF
                     if old_state.state in [STATE_UNKNOWN, STATE_UNAVAILABLE]
-                    else HVACMode.OFF  # old_state.state
+                    else old_state.state
                 )
                 self._enabled = self._attr_hvac_mode != HVACMode.OFF
                 if self._enabled:
