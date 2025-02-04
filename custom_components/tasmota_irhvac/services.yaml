@@ -13,6 +13,15 @@ set_econo:
           options:
             - "off"
             - "on"
+    state_mode:
+      description: Sets StateMode in MQTT message. Default is "SendStore".
+      example: "StoreOnly"
+      required: false
+      selector:
+        select:
+          options:
+            - StoreOnly
+            - SendStore
 
 set_turbo:
   description: Sets Turbo mode.
@@ -29,6 +38,15 @@ set_turbo:
           options:
             - "off"
             - "on"
+    state_mode:
+      description: Sets StateMode in MQTT message. Default is "SendStore".
+      example: "StoreOnly"
+      required: false
+      selector:
+        select:
+          options:
+            - StoreOnly
+            - SendStore
 
 set_filters:
   description: Sets Filters mode.
@@ -45,6 +63,15 @@ set_filters:
           options:
             - "off"
             - "on"
+    state_mode:
+      description: Sets StateMode in MQTT message. Default is "SendStore".
+      example: "StoreOnly"
+      required: false
+      selector:
+        select:
+          options:
+            - StoreOnly
+            - SendStore
 
 set_light:
   target:
@@ -61,6 +88,15 @@ set_light:
           options:
             - "off"
             - "on"
+    state_mode:
+      description: Sets StateMode in MQTT message. Default is "SendStore".
+      example: "StoreOnly"
+      required: false
+      selector:
+        select:
+          options:
+            - StoreOnly
+            - SendStore
 
 set_quiet:
   target:
@@ -77,6 +113,15 @@ set_quiet:
           options:
             - "off"
             - "on"
+    state_mode:
+      description: Sets StateMode in MQTT message. Default is "SendStore".
+      example: "StoreOnly"
+      required: false
+      selector:
+        select:
+          options:
+            - StoreOnly
+            - SendStore
 
 set_clean:
   target:
@@ -93,6 +138,15 @@ set_clean:
           options:
             - "off"
             - "on"
+    state_mode:
+      description: Sets StateMode in MQTT message. Default is "SendStore".
+      example: "StoreOnly"
+      required: false
+      selector:
+        select:
+          options:
+            - StoreOnly
+            - SendStore
 
 set_beep:
   target:
@@ -109,6 +163,15 @@ set_beep:
           options:
             - "off"
             - "on"
+    state_mode:
+      description: Sets StateMode in MQTT message. Default is "SendStore".
+      example: "StoreOnly"
+      required: false
+      selector:
+        select:
+          options:
+            - StoreOnly
+            - SendStore
 
 set_sleep:
   description: Sets Sleep mode.
@@ -120,6 +183,15 @@ set_sleep:
       description: Sets Sleep mode
       example: "0"
       required: true
+    state_mode:
+      description: Sets StateMode in MQTT message. Default is "SendStore".
+      example: "StoreOnly"
+      required: false
+      selector:
+        select:
+          options:
+            - StoreOnly
+            - SendStore
 
 set_swingv:
   description: Sets vane vertical position.
@@ -137,9 +209,19 @@ set_swingv:
             - "off"
             - "auto"
             - "highest"
+            - "high"
             - "middle"
             - "low"
             - "lowest"
+    state_mode:
+      description: Sets StateMode in MQTT message. Default is "SendStore".
+      example: "StoreOnly"
+      required: false
+      selector:
+        select:
+          options:
+            - StoreOnly
+            - SendStore
 
 set_swingh:
   name: Set swingh
@@ -158,7 +240,17 @@ set_swingh:
             - "off"
             - "auto"
             - "left max"
+            - "left"
             - "middle"
             - "right"
             - "right max"
             - "wide"
+    state_mode:
+      description: Sets StateMode in MQTT message. Default is "SendStore".
+      example: "StoreOnly"
+      required: false
+      selector:
+        select:
+          options:
+            - StoreOnly
+            - SendStore

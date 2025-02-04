@@ -8,12 +8,17 @@ climate:
     state_topic: "tele/your_tasmota_device/RESULT"
     # State is updated when the tasmota device completes IR transmissionm, should be pretty reliable.
     #state_topic: "stat/your_tasmota_device/RESULT"
+    # Optional second state topic, This option allows you to subscribe to both "tele" and "stat" messages.
+    state_topic_2: "stat/your_tasmota_device/RESULT"
     # Uncomment if your 'available topic' of Tasmota IR device are different (if device in HA is disabled)
     #availability_topic: "tele/your_tasmota_device/LWT"
     temperature_sensor: sensor.kitchen_temperature
     humidity_sensor: sensor.kitchen_humidity #optional - default None
     power_sensor: binaly_sensor.kitchen_ac_power #optional - default None
     vendor: "ELECTRA_AC"
+    # When operating grouped devices at the same time, MQTT commands are intentionally delayed to prevent multiple devices
+    # from performing the same operation at the same time. This allows the high current peaks to be shifted.
+    mqtt_delay: 0.0 #optional - default 0 int or 0.0 float value in [sec].
     min_temp: 16 #optional - default 16 int value
     max_temp: 32 #optional - default 32 int value
     target_temp: 26 #optional - default 26 int value
@@ -65,7 +70,7 @@ climate:
     default_swingv: "high" #optional - default "" string value
     default_swingh: "left" #optional - default "" string value 
     keep_mode_when_off: True #optional - default False boolean value : Must be True for MITSUBISHI_AC, ECOCLIM, etc.
-    toggle_list: #optional - default []
+    # toggle_list: #optional - default []
       # The toggled property is a setting that does not retain the On state.
       # Set this if your AC properties are toggle function.
       #- Beep
@@ -78,3 +83,6 @@ climate:
       #- SwingH
       #- SwingV
       #- Turbo
+# When turning off some devices with their remote control they are set to the lowest temperature
+# and this is shown on the thermostat card. Setting `ignore_off_temp` value to True will keep the last target temperature displayed on the card.
+ignore_off_temp: False #optional - default False boolean value
