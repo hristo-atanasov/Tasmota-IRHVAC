@@ -1238,7 +1238,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
             "Power": self.power_mode,
             "Mode": self._last_on_mode if self._keep_mode else self._attr_hvac_mode,
             "Celsius": self._celsius,
-            "Temp": self._attr_target_temperature,
+            "Temp": round(self._attr_target_temperature / self._temp_precision) * self._temp_precision,
             "FanSpeed": fan_speed,
             "SwingV": self._swingv,
             "SwingH": self._swingh,
