@@ -1,4 +1,5 @@
 """Adds support for generic thermostat units."""
+
 import json
 import logging
 import uuid
@@ -127,6 +128,7 @@ from .const import (
     CONF_SWINGH,
     CONF_TOGGLE_LIST,
     CONF_IGNORE_OFF_TEMP,
+    CONF_SPECIAL_MODE,
     DATA_KEY,
     DOMAIN,
     DEFAULT_NAME,
@@ -264,6 +266,7 @@ PLATFORM_SCHEMA = CLIMATE_PLATFORM_SCHEMA.extend(
             [vol.In(TOGGLE_ALL_LIST)],
         ),
         vol.Optional(CONF_IGNORE_OFF_TEMP, default=DEFAULT_IGNORE_OFF_TEMP): cv.boolean,
+        vol.Optional(CONF_SPECIAL_MODE, default=""): cv.string,
     }
 )
 
@@ -527,6 +530,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         self._toggle_list = config[CONF_TOGGLE_LIST]
         self._state_mode = DEFAULT_STATE_MODE
         self._ignore_off_temp = config[CONF_IGNORE_OFF_TEMP]
+        self._special_mode = config[CONF_SPECIAL_MODE]
         self._use_track_state_change_event = False
         self._unsubscribes = []
 
@@ -832,7 +836,11 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                 ):
                     await asyncio.sleep(3)
                     state = self.hass.states.get(self._power_sensor)
-                    await self._async_power_sensor_changed(None, state)
+                    # It's probably running in a special mode, such as an automatic cleaning function.
+                    is_special_mode = (
+                        True if state is not None and state.state else False
+                    )
+                    await self._async_power_sensor_changed(None, state, is_special_mode)
 
         unsubscribe = []
         unsubscribe.append(
@@ -1119,7 +1127,9 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         elif entity_id == self._power_sensor:
             await self._async_power_sensor_changed(old_state, new_state)
 
-    async def _async_power_sensor_changed(self, old_state, new_state):
+    async def _async_power_sensor_changed(
+        self, old_state, new_state, is_special_mode=False
+    ):
         """Handle power sensor changes."""
         if new_state is None:
             return
@@ -1129,7 +1139,11 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
 
         if new_state.state == STATE_ON:
             if self._attr_hvac_mode == HVACMode.OFF or self.power_mode == STATE_OFF:
-                self._attr_hvac_mode = self._last_on_mode
+                self._attr_hvac_mode = (
+                    self._special_mode
+                    if self._special_mode and is_special_mode
+                    else self._last_on_mode
+                )
                 self.power_mode = STATE_ON
                 self.async_schedule_update_ha_state()
 
