@@ -27,6 +27,8 @@ from homeassistant.core import cached_property, callback
 from homeassistant.helpers import event as ha_event
 from homeassistant.helpers.restore_state import RestoreEntity
 
+from homeassistant.util.unit_conversion import TemperatureConverter
+
 from homeassistant.components.climate.const import (
     FAN_AUTO,
     FAN_DIFFUSE,
@@ -619,9 +621,9 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         if old_state is not None:
             # If we have no initial temperature, restore
             if old_state.attributes.get(ATTR_TEMPERATURE) is not None:
-                self._attr_target_temperature = float(
+                self._attr_target_temperature = TemperatureConverter.convert(float(
                     old_state.attributes[ATTR_TEMPERATURE]
-                )
+                ), self.hass.config.units.temperature_unit, self.temperature_unit)
             if old_state.attributes.get(ATTR_PRESET_MODE) == PRESET_AWAY:
                 self._is_away = True
             if old_state.attributes.get(ATTR_FAN_MODE) is not None:
@@ -1155,7 +1157,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
     def _async_update_temp(self, state):
         """Update thermostat with latest state from sensor."""
         try:
-            self._attr_current_temperature = float(state.state)
+            self._attr_current_temperature = TemperatureConverter.convert(float(state.state), state.attributes["unit_of_measurement"], self.temperature_unit)
         except ValueError as ex:
             _LOGGER.debug("Unable to update from sensor: %s", ex)
 
@@ -1250,7 +1252,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
             "Power": self.power_mode,
             "Mode": self._last_on_mode if self._keep_mode else self._attr_hvac_mode,
             "Celsius": self._celsius,
-            "Temp": self._attr_target_temperature,
+            "Temp": round(self._attr_target_temperature / self._temp_precision) * self._temp_precision,
             "FanSpeed": fan_speed,
             "SwingV": self._swingv,
             "SwingH": self._swingh,
