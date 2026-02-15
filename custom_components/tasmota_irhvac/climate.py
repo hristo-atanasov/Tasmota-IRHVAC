@@ -1,13 +1,13 @@
 """Adds support for generic thermostat units."""
 
+import asyncio
 import json
 import logging
 import uuid
-import asyncio
-import voluptuous as vol
+
 import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
-
+import voluptuous as vol
 from homeassistant.components import mqtt
 
 try:
@@ -22,14 +22,11 @@ from homeassistant.components.climate import PLATFORM_SCHEMA as CLIMATE_PLATFORM
 # except ImportError:
 #     from homeassistant.components.binary_sensor import ClimateDevice as ClimateEntity
 from homeassistant.components.climate import ClimateEntity
-from homeassistant.core import cached_property, callback
-
-from homeassistant.helpers import event as ha_event
-from homeassistant.helpers.restore_state import RestoreEntity
-
-from homeassistant.util.unit_conversion import TemperatureConverter
-
 from homeassistant.components.climate.const import (
+    ATTR_FAN_MODE,
+    ATTR_HVAC_MODE,
+    ATTR_PRESET_MODE,
+    ATTR_SWING_MODE,
     FAN_AUTO,
     FAN_DIFFUSE,
     FAN_FOCUS,
@@ -39,21 +36,16 @@ from homeassistant.components.climate.const import (
     FAN_MIDDLE,
     FAN_OFF,
     FAN_ON,
-    HVACMode,
-    HVACAction,
-    ATTR_PRESET_MODE,
-    ATTR_FAN_MODE,
-    ATTR_SWING_MODE,
-    ATTR_HVAC_MODE,
     PRESET_AWAY,
     PRESET_NONE,
-    ClimateEntityFeature,
     SWING_BOTH,
     SWING_HORIZONTAL,
     SWING_OFF,
     SWING_VERTICAL,
+    ClimateEntityFeature,
+    HVACAction,
+    HVACMode,
 )
-
 from homeassistant.const import (
     ATTR_ENTITY_ID,
     ATTR_TEMPERATURE,
@@ -62,109 +54,113 @@ from homeassistant.const import (
     PRECISION_HALVES,
     PRECISION_TENTHS,
     PRECISION_WHOLE,
-    STATE_ON,
     STATE_OFF,
-    STATE_UNKNOWN,
+    STATE_ON,
     STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
     UnitOfTemperature,
 )
+from homeassistant.core import cached_property, callback
+from homeassistant.helpers import event as ha_event
+from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.util.unit_conversion import TemperatureConverter
 
 from .const import (
-    ATTR_ECONO,
-    ATTR_TURBO,
-    ATTR_QUIET,
-    ATTR_LIGHT,
-    ATTR_FILTERS,
-    ATTR_CLEAN,
     ATTR_BEEP,
-    ATTR_SLEEP,
-    ATTR_SWINGV,
-    ATTR_SWINGH,
+    ATTR_CLEAN,
+    ATTR_ECONO,
+    ATTR_FILTERS,
     ATTR_LAST_ON_MODE,
+    ATTR_LIGHT,
+    ATTR_QUIET,
+    ATTR_SLEEP,
     ATTR_STATE_MODE,
+    ATTR_SWINGH,
+    ATTR_SWINGV,
+    ATTR_TURBO,
     ATTRIBUTES_IRHVAC,
     CONF_AVAILABILITY_TOPIC,
-    STATE_AUTO,
+    CONF_AWAY_TEMP,
+    CONF_BEEP,
+    CONF_CELSIUS,
+    CONF_CLEAN,
+    CONF_COMMAND_TOPIC,
+    CONF_ECONO,
+    CONF_EXCLUSIVE_GROUP_VENDOR,
+    CONF_FAN_LIST,
+    CONF_FILTER,
+    CONF_HUMIDITY_SENSOR,
+    CONF_IGNORE_OFF_TEMP,
+    CONF_INITIAL_OPERATION_MODE,
+    CONF_KEEP_MODE,
+    CONF_LIGHT,
+    CONF_MAX_TEMP,
+    CONF_MIN_TEMP,
+    CONF_MODEL,
+    CONF_MODES_LIST,
+    CONF_MQTT_DELAY,
+    CONF_POWER_SENSOR,
+    CONF_PRECISION,
+    CONF_PROTOCOL,
+    CONF_QUIET,
+    CONF_SLEEP,
+    CONF_SPECIAL_MODE,
+    CONF_STATE_TOPIC,
+    CONF_SWING_LIST,
+    CONF_SWINGH,
+    CONF_SWINGV,
+    CONF_TARGET_TEMP,
+    CONF_TEMP_SENSOR,
+    CONF_TEMP_STEP,
+    CONF_TOGGLE_LIST,
+    CONF_TURBO,
+    CONF_VENDOR,
+    DATA_KEY,
+    DEFAULT_COMMAND_TOPIC,
+    DEFAULT_CONF_BEEP,
+    DEFAULT_CONF_CELSIUS,
+    DEFAULT_CONF_CLEAN,
+    DEFAULT_CONF_ECONO,
+    DEFAULT_CONF_FILTER,
+    DEFAULT_CONF_KEEP_MODE,
+    DEFAULT_CONF_LIGHT,
+    DEFAULT_CONF_MODEL,
+    DEFAULT_CONF_QUIET,
+    DEFAULT_CONF_SLEEP,
+    DEFAULT_CONF_TURBO,
+    DEFAULT_FAN_LIST,
+    DEFAULT_IGNORE_OFF_TEMP,
+    DEFAULT_MAX_TEMP,
+    DEFAULT_MIN_TEMP,
+    DEFAULT_MQTT_DELAY,
+    DEFAULT_NAME,
+    DEFAULT_PRECISION,
+    DEFAULT_STATE_MODE,
+    DEFAULT_STATE_TOPIC,
+    DEFAULT_TARGET_TEMP,
+    DOMAIN,
     HVAC_FAN_AUTO,
-    HVAC_FAN_MIN,
-    HVAC_FAN_MEDIUM,
+    HVAC_FAN_AUTO_MAX,
     HVAC_FAN_MAX,
+    HVAC_FAN_MAX_HIGH,
+    HVAC_FAN_MEDIUM,
+    HVAC_FAN_MIN,
     HVAC_MODE_AUTO_FAN,
     HVAC_MODE_FAN_AUTO,
-    HVAC_FAN_MAX_HIGH,
-    HVAC_FAN_AUTO_MAX,
     HVAC_MODES,
-    CONF_EXCLUSIVE_GROUP_VENDOR,
-    CONF_VENDOR,
-    CONF_PROTOCOL,
-    CONF_COMMAND_TOPIC,
-    CONF_STATE_TOPIC,
-    CONF_TEMP_SENSOR,
-    CONF_HUMIDITY_SENSOR,
-    CONF_POWER_SENSOR,
-    CONF_MQTT_DELAY,
-    CONF_MIN_TEMP,
-    CONF_MAX_TEMP,
-    CONF_TARGET_TEMP,
-    CONF_INITIAL_OPERATION_MODE,
-    CONF_AWAY_TEMP,
-    CONF_PRECISION,
-    CONF_TEMP_STEP,
-    CONF_MODES_LIST,
-    CONF_FAN_LIST,
-    CONF_SWING_LIST,
-    CONF_QUIET,
-    CONF_TURBO,
-    CONF_ECONO,
-    CONF_MODEL,
-    CONF_CELSIUS,
-    CONF_LIGHT,
-    CONF_FILTER,
-    CONF_CLEAN,
-    CONF_BEEP,
-    CONF_SLEEP,
-    CONF_KEEP_MODE,
-    CONF_SWINGV,
-    CONF_SWINGH,
-    CONF_TOGGLE_LIST,
-    CONF_IGNORE_OFF_TEMP,
-    CONF_SPECIAL_MODE,
-    DATA_KEY,
-    DOMAIN,
-    DEFAULT_NAME,
-    DEFAULT_STATE_TOPIC,
-    DEFAULT_COMMAND_TOPIC,
-    DEFAULT_MQTT_DELAY,
-    DEFAULT_TARGET_TEMP,
-    DEFAULT_MIN_TEMP,
-    DEFAULT_MAX_TEMP,
-    DEFAULT_PRECISION,
-    DEFAULT_FAN_LIST,
-    DEFAULT_CONF_QUIET,
-    DEFAULT_CONF_TURBO,
-    DEFAULT_CONF_ECONO,
-    DEFAULT_CONF_MODEL,
-    DEFAULT_CONF_CELSIUS,
-    DEFAULT_CONF_LIGHT,
-    DEFAULT_CONF_FILTER,
-    DEFAULT_CONF_CLEAN,
-    DEFAULT_CONF_BEEP,
-    DEFAULT_CONF_SLEEP,
-    DEFAULT_CONF_KEEP_MODE,
-    DEFAULT_STATE_MODE,
-    DEFAULT_IGNORE_OFF_TEMP,
     ON_OFF_LIST,
-    STATE_MODE_LIST,
-    SERVICE_ECONO_MODE,
-    SERVICE_TURBO_MODE,
-    SERVICE_QUIET_MODE,
-    SERVICE_LIGHT_MODE,
-    SERVICE_FILTERS_MODE,
-    SERVICE_CLEAN_MODE,
     SERVICE_BEEP_MODE,
-    SERVICE_SLEEP_MODE,
-    SERVICE_SET_SWINGV,
+    SERVICE_CLEAN_MODE,
+    SERVICE_ECONO_MODE,
+    SERVICE_FILTERS_MODE,
+    SERVICE_LIGHT_MODE,
+    SERVICE_QUIET_MODE,
     SERVICE_SET_SWINGH,
+    SERVICE_SET_SWINGV,
+    SERVICE_SLEEP_MODE,
+    SERVICE_TURBO_MODE,
+    STATE_AUTO,
+    STATE_MODE_LIST,
     TOGGLE_ALL_LIST,
 )
 
@@ -621,9 +617,11 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         if old_state is not None:
             # If we have no initial temperature, restore
             if old_state.attributes.get(ATTR_TEMPERATURE) is not None:
-                self._attr_target_temperature = TemperatureConverter.convert(float(
-                    old_state.attributes[ATTR_TEMPERATURE]
-                ), self.hass.config.units.temperature_unit, self.temperature_unit)
+                self._attr_target_temperature = TemperatureConverter.convert(
+                    float(old_state.attributes[ATTR_TEMPERATURE]),
+                    self.hass.config.units.temperature_unit,
+                    self.temperature_unit,
+                )
             if old_state.attributes.get(ATTR_PRESET_MODE) == PRESET_AWAY:
                 self._is_away = True
             if old_state.attributes.get(ATTR_FAN_MODE) is not None:
@@ -1157,7 +1155,11 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
     def _async_update_temp(self, state):
         """Update thermostat with latest state from sensor."""
         try:
-            self._attr_current_temperature = TemperatureConverter.convert(float(state.state), state.attributes["unit_of_measurement"], self.temperature_unit)
+            self._attr_current_temperature = TemperatureConverter.convert(
+                float(state.state),
+                state.attributes["unit_of_measurement"],
+                self.temperature_unit,
+            )
         except ValueError as ex:
             _LOGGER.debug("Unable to update from sensor: %s", ex)
 
@@ -1252,7 +1254,8 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
             "Power": self.power_mode,
             "Mode": self._last_on_mode if self._keep_mode else self._attr_hvac_mode,
             "Celsius": self._celsius,
-            "Temp": round(self._attr_target_temperature / self._temp_precision) * self._temp_precision,
+            "Temp": round(self._attr_target_temperature / self._temp_precision)
+            * self._temp_precision,
             "FanSpeed": fan_speed,
             "SwingV": self._swingv,
             "SwingH": self._swingh,
