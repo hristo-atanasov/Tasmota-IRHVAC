@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+import math
 import uuid
 
 import homeassistant.helpers.config_validation as cv
@@ -933,6 +934,11 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         if hvac_mode is not None:
             await self.set_mode(hvac_mode)
 
+        if (
+            self._attr_target_temperature_step
+            and self._attr_target_temperature_step >= 1
+        ):
+            temperature = self._normalize_settemp(temperature)
         self._attr_target_temperature = temperature
         if not self._attr_hvac_mode == HVACMode.OFF:
             self.power_mode = STATE_ON
@@ -1284,3 +1290,36 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
 
         # Update HA UI and State
         self.async_schedule_update_ha_state()
+
+    def _normalize_settemp(self, req: float | int | None) -> int | None:
+        """
+        Normalize a requested temperature to the 1°C resolution supported by
+        ECHONET Lite HVAC devices.
+
+        Matter controllers may send fractional values (e.g., 22.5°C). Since most
+        ECHONET air conditioners accept only integer setpoints, this function
+        converts the request to a valid value while preserving user intent:
+        - Integer values are used as-is.
+        - `.5` values are rounded directionally based on the previous target
+          temperature (up when increasing, down when decreasing).
+        - Other fractions are rounded to the nearest integer.
+        """
+        if req is None:
+            return None
+
+        res = None
+        if abs(req - round(req)) < 1e-9:
+            res = int(round(req))
+        else:
+            prev = self._attr_target_temperature
+            frac = req - math.floor(req)
+
+            if abs(frac - 0.5) < 1e-9 and prev is not None:
+                if req >= prev:
+                    res = math.ceil(req)
+                if req < prev:
+                    res = math.floor(req)
+            else:
+                res = int(math.floor(req + 0.5))
+
+        return res
