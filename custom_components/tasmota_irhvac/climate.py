@@ -579,7 +579,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         self._attr_preset_mode = None
         self._attr_current_temperature = None
         self._attr_current_humidity = None
-        self._attr_target_temperature = None
+        self._attr_target_temperature = self._def_target_temp
 
         self._support_flags = SUPPORT_FLAGS
         if self._away_temp is not None:
@@ -656,6 +656,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                 "No previously saved target temperature, setting to default value %s",
                 self._attr_target_temperature,
             )
+            self.async_write_ha_state()
 
         if self._attr_hvac_mode is HVACMode.OFF:
             self.power_mode = STATE_OFF
