@@ -1155,6 +1155,8 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
     @callback
     def _async_update_temp(self, state):
         """Update thermostat with latest state from sensor."""
+        if state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            return
         try:
             self._attr_current_temperature = TemperatureConverter.convert(
                 float(state.state),
