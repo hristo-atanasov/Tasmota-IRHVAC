@@ -658,7 +658,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
             )
             self.async_write_ha_state()
 
-        if self._attr_hvac_mode is HVACMode.OFF:
+        if self._attr_hvac_mode == HVACMode.OFF:
             self.power_mode = STATE_OFF
             self._enabled = False
         else:
@@ -707,7 +707,11 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         @callback
         async def state_message_received(message: mqtt.ReceiveMessage) -> None:
             """Handle new MQTT state messages."""
-            json_payload = json.loads(message.payload)
+            try:
+                json_payload = json.loads(message.payload)
+            except ValueError:
+                _LOGGER.error("Unable to parse MQTT payload as JSON: %s", message.payload)
+                return
             _LOGGER.debug(json_payload)
 
             # If listening to `tele`, result looks like: {"IrReceived":{"Protocol":"XXX", ... ,"IRHVAC":{ ... }}}
@@ -733,11 +737,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                         self._attr_hvac_mode = HVACMode.FAN_ONLY
                 if "Temp" in payload:
                     if payload["Temp"] > 0:
-                        if self.power_mode == STATE_OFF and self._ignore_off_temp:
-                            self._attr_target_temperature = (
-                                self._attr_target_temperature
-                            )
-                        else:
+                        if not (self.power_mode == STATE_OFF and self._ignore_off_temp):
                             self._attr_target_temperature = payload["Temp"]
                 if "Celsius" in payload:
                     self._celsius = payload["Celsius"].lower()
@@ -810,7 +810,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                         self._attr_fan_mode = fan_mode
                     _LOGGER.debug(self._attr_fan_mode)
 
-                if self._attr_hvac_mode is not HVACMode.OFF:
+                if self._attr_hvac_mode != HVACMode.OFF:
                     self._last_on_mode = self._attr_hvac_mode
 
                 # Set default state to off
@@ -1161,8 +1161,8 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                 state.attributes["unit_of_measurement"],
                 self.temperature_unit,
             )
-        except ValueError as ex:
-            _LOGGER.debug("Unable to update from sensor: %s", ex)
+        except (ValueError, KeyError) as ex:
+            _LOGGER.error("Unable to update from sensor: %s", ex)
 
     @callback
     def _async_update_humidity(self, state):
@@ -1172,11 +1172,6 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                 self._attr_current_humidity = int(float(state.state))
         except ValueError as ex:
             _LOGGER.error("Unable to update from humidity sensor: %s", ex)
-
-    @property
-    def _is_device_active(self):
-        """If the toggleable device is currently active."""
-        return self.power_mode == STATE_ON
 
     @cached_property
     def supported_features(self):
