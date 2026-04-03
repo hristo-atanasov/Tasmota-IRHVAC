@@ -8,6 +8,7 @@ import uuid
 import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
 import voluptuous as vol
+from homeassistant import config_entries
 from homeassistant.components import mqtt
 
 try:
@@ -106,6 +107,7 @@ from .const import (
     CONF_SLEEP,
     CONF_SPECIAL_MODE,
     CONF_STATE_TOPIC,
+    CONF_STATE_TOPIC_2,
     CONF_SWING_LIST,
     CONF_SWINGH,
     CONF_SWINGV,
@@ -404,62 +406,50 @@ SERVICE_TO_METHOD = {
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """Set up the generic thermostat platform."""
-    vendor = config.get(CONF_VENDOR)
-    protocol = config.get(CONF_PROTOCOL)
-    name = config.get(CONF_NAME)
-
-    if DATA_KEY not in hass.data:
-        hass.data[DATA_KEY] = {}
-
-    if vendor is None:
-        if protocol is None:
-            _LOGGER.error('Neither vendor nor protocol provided for "%s"!', name)
-            return
-
-        vendor = protocol
-
-    tasmotaIrhvac = TasmotaIrhvac(
-        hass,
-        vendor,
-        config,
+    """Set up via YAML (deprecated — triggers config entry import)."""
+    _LOGGER.warning(
+        "Configuration of Tasmota IRHVAC via YAML is deprecated. "
+        "Your configuration has been imported. Please remove the YAML "
+        "configuration and restart Home Assistant."
     )
-    uuidstr = uuid.uuid4().hex
-    hass.data[DATA_KEY][uuidstr] = tasmotaIrhvac
-
-    async_add_entities([tasmotaIrhvac])
-
-    async def async_service_handler(service):
-        """Map services to methods on TasmotaIrhvac."""
-        method = SERVICE_TO_METHOD.get(service.service, {})
-        params = {
-            key: value for key, value in service.data.items() if key != ATTR_ENTITY_ID
-        }
-        entity_ids = service.data.get(ATTR_ENTITY_ID)
-        if entity_ids:
-            devices = [
-                device
-                for device in hass.data[DATA_KEY].values()
-                if device.entity_id in entity_ids
-            ]
-        else:
-            devices = hass.data[DATA_KEY].values()
-
-        update_tasks = []
-        for device in devices:
-            if not hasattr(device, method["method"]):
-                continue
-            await getattr(device, method["method"])(**params)
-            update_tasks.append(asyncio.create_task(device.async_update_ha_state(True)))
-
-        if update_tasks:
-            await asyncio.wait(update_tasks)
-
-    for irhvac_service in SERVICE_TO_METHOD:
-        schema = SERVICE_TO_METHOD[irhvac_service].get("schema", IRHVAC_SERVICE_SCHEMA)
-        hass.services.async_register(
-            DOMAIN, irhvac_service, async_service_handler, schema=schema
+    from homeassistant.components.persistent_notification import async_create
+    async_create(
+        hass,
+        "Your Tasmota IRHVAC YAML configuration has been imported into the UI. "
+        "Please remove the `platform: tasmota_irhvac` entry from your "
+        "configuration.yaml and restart Home Assistant.",
+        title="Tasmota IRHVAC YAML Import",
+        notification_id="tasmota_irhvac_yaml_import",
+    )
+    hass.async_create_task(
+        hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_IMPORT},
+            data=dict(config),
         )
+    )
+
+
+async def async_setup_entry(hass, entry, async_add_entities):
+    """Set up Tasmota IRHVAC climate from a config entry."""
+    hass.data.setdefault(DATA_KEY, {})
+
+    config = {**entry.data, **entry.options}
+
+    vendor = config.get(CONF_VENDOR)
+    if vendor is None:
+        vendor = config.get(CONF_PROTOCOL)
+    if vendor is None:
+        _LOGGER.error("No vendor configured for %s", entry.title)
+        return False
+
+    entity = TasmotaIrhvac(hass, vendor, config)
+
+    if entity.unique_id is None:
+        entity._attr_unique_id = entry.entry_id
+
+    hass.data[DATA_KEY][entry.entry_id] = entity
+    async_add_entities([entity])
 
 
 class TasmotaIrhvac(RestoreEntity, ClimateEntity):
@@ -485,7 +475,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         self._humidity_sensor = config.get(CONF_HUMIDITY_SENSOR)
         self._power_sensor = config.get(CONF_POWER_SENSOR)
         self.state_topic = config[CONF_STATE_TOPIC]
-        self.state_topic2 = config.get(CONF_STATE_TOPIC + "_2")
+        self.state_topic2 = config.get(CONF_STATE_TOPIC_2) or config.get(CONF_STATE_TOPIC + "_2")
         self._away_temp = config.get(CONF_AWAY_TEMP)
         self._saved_target_temp = config[CONF_TARGET_TEMP] or self._away_temp
         self._temp_precision = config[CONF_PRECISION]
