@@ -1,10 +1,10 @@
 {
   "domain": "tasmota_irhvac",
   "name": "Tasmota Irhvac",
-  "version": "2024.6.3",
+  "version": "2026.4.5",
   "documentation": "https://github.com/hristo-atanasov/Tasmota-IRHVAC",
   "issue_tracker": "https://github.com/hristo-atanasov/Tasmota-IRHVAC/issues",
-  "homeassistant": "2022.5.0",
+  "homeassistant": "2024.11.0",
   "requirements": [],
   "dependencies": [
     "mqtt",
