@@ -1,14 +1,14 @@
 {
   "domain": "tasmota_irhvac",
   "name": "Tasmota Irhvac",
-  "version": "2026.4.5",
+  "version": "2026.4.6",
+  "config_flow": true,
   "documentation": "https://github.com/hristo-atanasov/Tasmota-IRHVAC",
   "issue_tracker": "https://github.com/hristo-atanasov/Tasmota-IRHVAC/issues",
-  "homeassistant": "2024.11.0",
+  "homeassistant": "2026.1.0",
   "requirements": [],
   "dependencies": [
-    "mqtt",
-    "sensor"
+    "mqtt"
   ],
   "codeowners": [
     "@hristo-atanasov",
