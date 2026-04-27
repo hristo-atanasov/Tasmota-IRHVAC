@@ -49,6 +49,7 @@ climate:
       #- "middle"
       #- "focus"
       #- "diffuse"
+      #- "top"
       - "min"
       - "max"
       #- "auto"
