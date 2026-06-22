@@ -1,0 +1,179 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Device Setup",
+        "description": "Configure your Tasmota IR air conditioner connection.",
+        "data": {
+          "name": "Name",
+          "vendor": "IR Vendor/Protocol",
+          "command_topic": "MQTT Command Topic",
+          "state_topic": "MQTT State Topic",
+          "state_topic_2": "Secondary State Topic",
+          "availability_topic": "Availability Topic",
+          "mqtt_delay": "MQTT Delay (seconds)"
+        },
+        "data_description": {
+          "vendor": "The IR protocol vendor (e.g., SAMSUNG_AC, ELECTRA_AC, FUJITSU_AC, MITSUBISHI_AC).",
+          "command_topic": "MQTT topic for sending IR commands. Usually cmnd/'{device}'/irhvac.",
+          "state_topic": "Primary MQTT topic for receiving AC state updates. Use tele/'{device}'/RESULT to capture all IR signals (including physical remote).",
+          "state_topic_2": "Optional secondary MQTT state topic. Use stat/'{device}'/RESULT to also capture IR transmission confirmations. Subscribes to both topics if set.",
+          "availability_topic": "MQTT topic for device online/offline status. Leave blank to auto-derive from command topic (tele/'{device}'/LWT).",
+          "mqtt_delay": "Delay in seconds between MQTT commands. Use when operating multiple devices to stagger high-current peaks."
+        }
+      },
+      "climate": {
+        "title": "Climate Settings",
+        "description": "Configure temperature ranges, modes, and fan settings. All fields have sensible defaults.",
+        "data": {
+          "min_temp": "Minimum Temperature (\u00b0C)",
+          "max_temp": "Maximum Temperature (\u00b0C)",
+          "target_temp": "Default Target Temperature (\u00b0C)",
+          "precision": "Temperature Precision",
+          "temp_step": "Temperature Step Size",
+          "celsius_mode": "IR Command Temperature Unit",
+          "away_temp": "Away Temperature (\u00b0C)",
+          "ignore_off_temp": "Ignore Off Temperature",
+          "supported_modes": "Supported HVAC Modes",
+          "supported_fan_speeds": "Supported Fan Speeds",
+          "supported_swing_list": "Supported Swing Modes",
+          "initial_operation_mode": "Initial Operation Mode",
+          "keep_mode_when_off": "Keep Mode When Off"
+        },
+        "data_description": {
+          "celsius_mode": "Temperature unit for IR commands sent to the AC. Most AC units use Celsius internally ('on') even if your HA or remote displays Fahrenheit. Only change to 'off' if your specific AC model requires Fahrenheit IR commands.",
+          "ignore_off_temp": "When the AC is turned off via remote, some devices report the lowest temperature. Enable to keep showing the last target temperature instead.",
+          "keep_mode_when_off": "Keep the last HVAC mode when turning off. Required for MITSUBISHI_AC, ECOCLIM, and similar devices.",
+          "away_temp": "Temperature to use when Away preset is active. Leave blank to disable the Away preset.",
+          "supported_fan_speeds": "Note: auto_max/max_high are for devices where the remote shows max but Tasmota reports high, and auto which is actually max."
+        }
+      },
+      "advanced": {
+        "title": "Advanced Settings & Sensors",
+        "description": "Configure default modes, swing positions, toggle properties, and external sensors.",
+        "data": {
+          "default_quiet_mode": "Default Quiet Mode",
+          "default_turbo_mode": "Default Turbo Mode",
+          "default_econo_mode": "Default Economy Mode",
+          "hvac_model": "HVAC Model",
+          "default_light_mode": "Default Light Mode",
+          "default_filter_mode": "Default Filter Mode",
+          "default_clean_mode": "Default Clean Mode",
+          "default_beep_mode": "Default Beep Mode",
+          "default_sleep_mode": "Default Sleep Mode",
+          "default_swingv": "Default Vertical Swing",
+          "default_swingh": "Default Horizontal Swing",
+          "toggle_list": "Toggle Properties",
+          "special_mode": "Special Mode",
+          "temperature_sensor": "Temperature Sensor",
+          "humidity_sensor": "Humidity Sensor",
+          "power_sensor": "Power Sensor"
+        },
+        "data_description": {
+          "hvac_model": "AC model identifier. Use -1 for auto-detection.",
+          "toggle_list": "Properties that don't retain the On state. Set this if your AC has toggle-only controls (pressing the button toggles between on and off rather than setting a specific state).",
+          "special_mode": "Mode to enter for special functions like automatic cleaning after operation. Leave blank to disable.",
+          "temperature_sensor": "External temperature sensor entity for more accurate room temperature readings.",
+          "humidity_sensor": "External humidity sensor entity.",
+          "power_sensor": "Binary sensor or sensor that indicates whether the AC unit is powered on."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Device",
+        "description": "Update the device connection settings.",
+        "data": {
+          "name": "Name",
+          "vendor": "IR Vendor/Protocol",
+          "command_topic": "MQTT Command Topic",
+          "state_topic": "MQTT State Topic",
+          "state_topic_2": "Secondary State Topic",
+          "availability_topic": "Availability Topic"
+        }
+      }
+    },
+    "error": {
+      "vendor_required": "Vendor is required."
+    },
+    "abort": {
+      "already_configured": "This device is already configured.",
+      "reconfigure_successful": "Device reconfigured successfully."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "menu_options": {
+          "mqtt": "MQTT Settings",
+          "temperature": "Temperature Settings",
+          "modes": "Mode Settings",
+          "defaults": "Default Values",
+          "sensors": "Sensors",
+          "advanced_options": "Advanced Settings"
+        }
+      },
+      "mqtt": {
+        "title": "MQTT Settings",
+        "data": {
+          "mqtt_delay": "MQTT Delay (seconds)"
+        }
+      },
+      "temperature": {
+        "title": "Temperature Settings",
+        "data": {
+          "min_temp": "Minimum Temperature (\u00b0C)",
+          "max_temp": "Maximum Temperature (\u00b0C)",
+          "target_temp": "Default Target Temperature (\u00b0C)",
+          "precision": "Temperature Precision",
+          "temp_step": "Temperature Step Size",
+          "celsius_mode": "IR Command Temperature Unit",
+          "away_temp": "Away Temperature (\u00b0C)",
+          "ignore_off_temp": "Ignore Off Temperature"
+        },
+        "data_description": {
+          "celsius_mode": "Temperature unit for IR commands sent to the AC. Most AC units use Celsius internally ('on') even if your HA or remote displays Fahrenheit."
+        }
+      },
+      "modes": {
+        "title": "Mode Settings",
+        "data": {
+          "supported_modes": "Supported HVAC Modes",
+          "supported_fan_speeds": "Supported Fan Speeds",
+          "supported_swing_list": "Supported Swing Modes",
+          "initial_operation_mode": "Initial Operation Mode",
+          "keep_mode_when_off": "Keep Mode When Off"
+        }
+      },
+      "defaults": {
+        "title": "Default Values",
+        "data": {
+          "default_quiet_mode": "Quiet Mode",
+          "default_turbo_mode": "Turbo Mode",
+          "default_econo_mode": "Economy Mode",
+          "hvac_model": "HVAC Model",
+          "default_light_mode": "Light Mode",
+          "default_filter_mode": "Filter Mode",
+          "default_clean_mode": "Clean Mode",
+          "default_beep_mode": "Beep Mode",
+          "default_sleep_mode": "Sleep Mode",
+          "default_swingv": "Default Vertical Swing",
+          "default_swingh": "Default Horizontal Swing"
+        }
+      },
+      "sensors": {
+        "title": "Sensors",
+        "data": {
+          "temperature_sensor": "Temperature Sensor",
+          "humidity_sensor": "Humidity Sensor",
+          "power_sensor": "Power Sensor"
+        }
+      },
+      "advanced_options": {
+        "title": "Advanced Settings",
+        "data": {
+          "toggle_list": "Toggle Properties",
+          "special_mode": "Special Mode"
+        }
+      }
+    }
+  }
+}

@@ -103,8 +103,11 @@ DEFAULT_IGNORE_OFF_TEMP = False
 ATTR_NAME = "name"
 ATTR_VALUE = "value"
 
+CONF_STATE_TOPIC_2 = "state_topic_2"
+
 DATA_KEY = "tasmota_irhvac.climate"
 DOMAIN = "tasmota_irhvac"
+PLATFORMS = ["climate"]
 
 ATTR_ECONO = "econo"
 ATTR_TURBO = "turbo"
