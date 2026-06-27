@@ -5,6 +5,8 @@ import json
 import logging
 import math
 import uuid
+from functools import cached_property
+from typing import cast
 
 import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
@@ -14,7 +16,7 @@ from homeassistant.components import mqtt
 try:
     from homeassistant.components.mqtt.schemas import MQTT_ENTITY_COMMON_SCHEMA
 except ImportError:
-    from homeassistant.components.mqtt.mixins import MQTT_ENTITY_COMMON_SCHEMA
+    from homeassistant.components.mqtt.mixins import MQTT_ENTITY_COMMON_SCHEMA  # ty: ignore[unresolved-import]
 
 from homeassistant.components.climate import PLATFORM_SCHEMA as CLIMATE_PLATFORM_SCHEMA
 
@@ -62,7 +64,7 @@ from homeassistant.const import (
     STATE_UNKNOWN,
     UnitOfTemperature,
 )
-from homeassistant.core import cached_property, callback
+from homeassistant.core import callback
 from homeassistant.helpers import event as ha_event
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util.unit_conversion import TemperatureConverter
@@ -450,9 +452,10 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
         update_tasks = []
         for device in devices:
-            if not hasattr(device, method["method"]):
+            method_name = cast(str, method["method"])
+            if not hasattr(device, method_name):
                 continue
-            await getattr(device, method["method"])(**params)
+            await getattr(device, method_name)(**params)
             update_tasks.append(asyncio.create_task(device.async_update_ha_state(True)))
 
         if update_tasks:
@@ -641,14 +644,15 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                 if val is not None:
                     setattr(self, "_" + prop, val)
             if old_state.state:
-                self._attr_hvac_mode = (
+                restored_mode = (
                     HVACMode.OFF
                     if old_state.state in [STATE_UNKNOWN, STATE_UNAVAILABLE]
-                    else old_state.state
+                    else HVACMode(old_state.state)
                 )
-                self._enabled = self._attr_hvac_mode != HVACMode.OFF
+                self._attr_hvac_mode = restored_mode
+                self._enabled = restored_mode != HVACMode.OFF
                 if self._enabled:
-                    self._last_on_mode = self._attr_hvac_mode
+                    self._last_on_mode = restored_mode
             if self._swingv != "auto":
                 self._fix_swingv = self._swingv
             if self._swingh != "auto":
@@ -736,10 +740,12 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                 if "Power" in payload:
                     self.power_mode = payload["Power"].lower()
                 if "Mode" in payload:
-                    self._attr_hvac_mode = payload["Mode"].lower()
+                    mode_str = payload["Mode"].lower()
                     # Some vendors send/receive mode as fan instead of fan_only
-                    if self._attr_hvac_mode == HVACAction.FAN:
+                    if mode_str == HVACAction.FAN:
                         self._attr_hvac_mode = HVACMode.FAN_ONLY
+                    else:
+                        self._attr_hvac_mode = HVACMode(mode_str)
                 if "Temp" in payload:
                     if payload["Temp"] > 0:
                         if not (self.power_mode == STATE_OFF and self._ignore_off_temp):
