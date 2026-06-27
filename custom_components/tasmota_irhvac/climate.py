@@ -12,6 +12,7 @@ import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
 import voluptuous as vol
 from homeassistant.components import mqtt
+from homeassistant.helpers.script import Script
 
 try:
     from homeassistant.components.mqtt.schemas import MQTT_ENTITY_COMMON_SCHEMA
@@ -107,6 +108,9 @@ from .const import (
     CONF_PRECISION,
     CONF_PROTOCOL,
     CONF_QUIET,
+    CONF_SET_LIGHT_ACTION,
+    CONF_SET_SWINGH_ACTION,
+    CONF_SET_SWINGV_ACTION,
     CONF_SLEEP,
     CONF_SPECIAL_MODE,
     CONF_STATE_TOPIC,
@@ -268,6 +272,9 @@ PLATFORM_SCHEMA = CLIMATE_PLATFORM_SCHEMA.extend(
         ),
         vol.Optional(CONF_IGNORE_OFF_TEMP, default=DEFAULT_IGNORE_OFF_TEMP): cv.boolean,
         vol.Optional(CONF_SPECIAL_MODE, default=""): cv.string,
+        vol.Optional(CONF_SET_SWINGV_ACTION): cv.SCRIPT_SCHEMA,
+        vol.Optional(CONF_SET_SWINGH_ACTION): cv.SCRIPT_SCHEMA,
+        vol.Optional(CONF_SET_LIGHT_ACTION): cv.SCRIPT_SCHEMA,
     }
 )
 
@@ -509,6 +516,22 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         self._state_mode = DEFAULT_STATE_MODE
         self._ignore_off_temp = config[CONF_IGNORE_OFF_TEMP]
         self._special_mode = config[CONF_SPECIAL_MODE]
+        name = config.get(CONF_NAME)
+        self._set_swingv_script = (
+            Script(hass, config[CONF_SET_SWINGV_ACTION], f"{name} set_swingv", DOMAIN)
+            if config.get(CONF_SET_SWINGV_ACTION) is not None
+            else None
+        )
+        self._set_swingh_script = (
+            Script(hass, config[CONF_SET_SWINGH_ACTION], f"{name} set_swingh", DOMAIN)
+            if config.get(CONF_SET_SWINGH_ACTION) is not None
+            else None
+        )
+        self._set_light_script = (
+            Script(hass, config[CONF_SET_LIGHT_ACTION], f"{name} set_light", DOMAIN)
+            if config.get(CONF_SET_LIGHT_ACTION) is not None
+            else None
+        )
         self._use_track_state_change_event = False
         self._unsubscribes = []
 
@@ -965,9 +988,23 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
             _LOGGER.error(self._attr_swing_modes)
             return
         self._attr_swing_mode = swing_mode
-        # note: set _swingv and _swingh in send_ir() later
         if not self._attr_hvac_mode == HVACMode.OFF:
             self.power_mode = STATE_ON
+        if self._set_swingv_script is not None or self._set_swingh_script is not None:
+            self._compute_swing()
+            if self._set_swingv_script is not None:
+                await self._set_swingv_script.async_run(
+                    run_variables={ATTR_SWINGV: self._swingv},
+                    context=self._context,
+                )
+            if self._set_swingh_script is not None:
+                await self._set_swingh_script.async_run(
+                    run_variables={ATTR_SWINGH: self._swingh},
+                    context=self._context,
+                )
+            if self._set_swingv_script is not None and self._set_swingh_script is not None:
+                self.async_write_ha_state()
+                return
         await self.async_send_cmd()
 
     async def async_set_econo(self, econo, state_mode):
@@ -1000,7 +1037,15 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
             return
         self._light = light.lower()
         self._state_mode = state_mode
-        await self.async_send_cmd()
+        if self._set_light_script is not None:
+            await self._set_light_script.async_run(
+                run_variables={ATTR_LIGHT: self._light},
+                context=self._context,
+            )
+            self._state_mode = DEFAULT_STATE_MODE
+            self.async_write_ha_state()
+        else:
+            await self.async_send_cmd()
 
     async def async_set_filters(self, filters, state_mode):
         """Set new target filters mode."""
@@ -1050,7 +1095,15 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                 if SWING_VERTICAL in (self._attr_swing_modes or []):
                     self._attr_swing_mode = SWING_VERTICAL
         self._state_mode = state_mode
-        await self.async_send_cmd()
+        if self._set_swingv_script is not None:
+            await self._set_swingv_script.async_run(
+                run_variables={ATTR_SWINGV: self._swingv},
+                context=self._context,
+            )
+            self._state_mode = DEFAULT_STATE_MODE
+            self.async_write_ha_state()
+        else:
+            await self.async_send_cmd()
 
     async def async_set_swingh(self, swingh, state_mode):
         """Set new target swingh."""
@@ -1070,7 +1123,15 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                 if SWING_HORIZONTAL in (self._attr_swing_modes or []):
                     self._attr_swing_mode = SWING_HORIZONTAL
         self._state_mode = state_mode
-        await self.async_send_cmd()
+        if self._set_swingh_script is not None:
+            await self._set_swingh_script.async_run(
+                run_variables={ATTR_SWINGH: self._swingh},
+                context=self._context,
+            )
+            self._state_mode = DEFAULT_STATE_MODE
+            self.async_write_ha_state()
+        else:
+            await self.async_send_cmd()
 
     async def async_send_cmd(self):
         await self.send_ir()
@@ -1198,6 +1259,21 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
             self._enabled = True
             self.power_mode = STATE_ON
 
+    def _compute_swing(self):
+        """Update _swingv/_swingh from current swing_mode and fix values."""
+        self._swingv = STATE_OFF if self._fix_swingv is None else self._fix_swingv
+        self._swingh = STATE_OFF if self._fix_swingh is None else self._fix_swingh
+        if SWING_BOTH in (self._attr_swing_modes or []) or SWING_VERTICAL in (
+            self._attr_swing_modes or []
+        ):
+            if self._attr_swing_mode in (SWING_BOTH, SWING_VERTICAL):
+                self._swingv = STATE_AUTO
+        if SWING_BOTH in (self._attr_swing_modes or []) or SWING_HORIZONTAL in (
+            self._attr_swing_modes or []
+        ):
+            if self._attr_swing_mode in (SWING_BOTH, SWING_HORIZONTAL):
+                self._swingh = STATE_AUTO
+
     async def send_ir(self):
         """Send the payload to tasmota mqtt topic."""
         fan_speed = self.fan_mode
@@ -1211,27 +1287,7 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
             if self.fan_mode == FAN_LOW:
                 fan_speed = HVAC_FAN_MIN
 
-        # Set the swing mode - default off
-        self._swingv = STATE_OFF if self._fix_swingv is None else self._fix_swingv
-        self._swingh = STATE_OFF if self._fix_swingh is None else self._fix_swingh
-
-        if SWING_BOTH in (self._attr_swing_modes or []) or SWING_VERTICAL in (
-            self._attr_swing_modes or []
-        ):
-            if (
-                self._attr_swing_mode == SWING_BOTH
-                or self._attr_swing_mode == SWING_VERTICAL
-            ):
-                self._swingv = STATE_AUTO
-
-        if SWING_BOTH in (self._attr_swing_modes or []) or SWING_HORIZONTAL in (
-            self._attr_swing_modes or []
-        ):
-            if (
-                self._attr_swing_mode == SWING_BOTH
-                or self._attr_swing_mode == SWING_HORIZONTAL
-            ):
-                self._swingh = STATE_AUTO
+        self._compute_swing()
 
         _dt = dt_util.now()
         _min = _dt.hour * 60 + _dt.minute
@@ -1247,12 +1303,9 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
             "Temp": round(self._attr_target_temperature / self._temp_precision)
             * self._temp_precision,
             "FanSpeed": fan_speed,
-            "SwingV": self._swingv,
-            "SwingH": self._swingh,
             "Quiet": self._quiet,
             "Turbo": self._turbo,
             "Econo": self._econo,
-            "Light": self._light,
             "Filter": self._filter,
             "Clean": self._clean,
             "Beep": self._beep,
@@ -1260,6 +1313,14 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
             "Clock": int(_min),
             "Weekday": int(_dt.weekday()),
         }
+
+        if self._set_swingv_script is None:
+            payload_data["SwingV"] = self._swingv
+        if self._set_swingh_script is None:
+            payload_data["SwingH"] = self._swingh
+        if self._set_light_script is None:
+            payload_data["Light"] = self._light
+
         self._state_mode = DEFAULT_STATE_MODE
         for key in self._toggle_list:
             setattr(self, "_" + key.lower(), "off")

@@ -75,6 +75,9 @@ CONF_SWINGH = "default_swingh"
 CONF_TOGGLE_LIST = "toggle_list"
 CONF_IGNORE_OFF_TEMP = "ignore_off_temp"
 CONF_SPECIAL_MODE = "special_mode"
+CONF_SET_SWINGV_ACTION = "set_swingv"
+CONF_SET_SWINGH_ACTION = "set_swingh"
+CONF_SET_LIGHT_ACTION = "set_light"
 
 # Platform specific default values
 DEFAULT_NAME = "IR AirConditioner"
