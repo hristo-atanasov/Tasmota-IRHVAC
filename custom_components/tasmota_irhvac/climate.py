@@ -5,8 +5,8 @@ import json
 import logging
 import math
 import uuid
+from dataclasses import dataclass, field
 from functools import cached_property
-from typing import cast
 
 import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
@@ -364,47 +364,23 @@ SERVICE_SCHEMA_SET_SWINGH = IRHVAC_SERVICE_SCHEMA.extend(
     }
 )
 
-SERVICE_TO_METHOD = {
-    SERVICE_ECONO_MODE: {
-        "method": "async_set_econo",
-        "schema": SERVICE_SCHEMA_ECONO_MODE,
-    },
-    SERVICE_TURBO_MODE: {
-        "method": "async_set_turbo",
-        "schema": SERVICE_SCHEMA_TURBO_MODE,
-    },
-    SERVICE_QUIET_MODE: {
-        "method": "async_set_quiet",
-        "schema": SERVICE_SCHEMA_QUIET_MODE,
-    },
-    SERVICE_LIGHT_MODE: {
-        "method": "async_set_light",
-        "schema": SERVICE_SCHEMA_LIGHT_MODE,
-    },
-    SERVICE_FILTERS_MODE: {
-        "method": "async_set_filters",
-        "schema": SERVICE_SCHEMA_FILTERS_MODE,
-    },
-    SERVICE_CLEAN_MODE: {
-        "method": "async_set_clean",
-        "schema": SERVICE_SCHEMA_CLEAN_MODE,
-    },
-    SERVICE_BEEP_MODE: {
-        "method": "async_set_beep",
-        "schema": SERVICE_SCHEMA_BEEP_MODE,
-    },
-    SERVICE_SLEEP_MODE: {
-        "method": "async_set_sleep",
-        "schema": SERVICE_SCHEMA_SLEEP_MODE,
-    },
-    SERVICE_SET_SWINGV: {
-        "method": "async_set_swingv",
-        "schema": SERVICE_SCHEMA_SET_SWINGV,
-    },
-    SERVICE_SET_SWINGH: {
-        "method": "async_set_swingh",
-        "schema": SERVICE_SCHEMA_SET_SWINGH,
-    },
+@dataclass(frozen=True)
+class ServiceMethod:
+    method: str
+    schema: vol.Schema = field(default_factory=lambda: IRHVAC_SERVICE_SCHEMA)
+
+
+SERVICE_TO_METHOD: dict[str, ServiceMethod] = {
+    SERVICE_ECONO_MODE: ServiceMethod("async_set_econo", SERVICE_SCHEMA_ECONO_MODE),
+    SERVICE_TURBO_MODE: ServiceMethod("async_set_turbo", SERVICE_SCHEMA_TURBO_MODE),
+    SERVICE_QUIET_MODE: ServiceMethod("async_set_quiet", SERVICE_SCHEMA_QUIET_MODE),
+    SERVICE_LIGHT_MODE: ServiceMethod("async_set_light", SERVICE_SCHEMA_LIGHT_MODE),
+    SERVICE_FILTERS_MODE: ServiceMethod("async_set_filters", SERVICE_SCHEMA_FILTERS_MODE),
+    SERVICE_CLEAN_MODE: ServiceMethod("async_set_clean", SERVICE_SCHEMA_CLEAN_MODE),
+    SERVICE_BEEP_MODE: ServiceMethod("async_set_beep", SERVICE_SCHEMA_BEEP_MODE),
+    SERVICE_SLEEP_MODE: ServiceMethod("async_set_sleep", SERVICE_SCHEMA_SLEEP_MODE),
+    SERVICE_SET_SWINGV: ServiceMethod("async_set_swingv", SERVICE_SCHEMA_SET_SWINGV),
+    SERVICE_SET_SWINGH: ServiceMethod("async_set_swingh", SERVICE_SCHEMA_SET_SWINGH),
 }
 
 
@@ -436,7 +412,9 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     async def async_service_handler(service):
         """Map services to methods on TasmotaIrhvac."""
-        method = SERVICE_TO_METHOD.get(service.service, {})
+        method = SERVICE_TO_METHOD.get(service.service)
+        if method is None:
+            return
         params = {
             key: value for key, value in service.data.items() if key != ATTR_ENTITY_ID
         }
@@ -452,19 +430,17 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
         update_tasks = []
         for device in devices:
-            method_name = cast(str, method["method"])
-            if not hasattr(device, method_name):
+            if not hasattr(device, method.method):
                 continue
-            await getattr(device, method_name)(**params)
+            await getattr(device, method.method)(**params)
             update_tasks.append(asyncio.create_task(device.async_update_ha_state(True)))
 
         if update_tasks:
             await asyncio.wait(update_tasks)
 
-    for irhvac_service in SERVICE_TO_METHOD:
-        schema = SERVICE_TO_METHOD[irhvac_service].get("schema", IRHVAC_SERVICE_SCHEMA)
+    for irhvac_service, spec in SERVICE_TO_METHOD.items():
         hass.services.async_register(
-            DOMAIN, irhvac_service, async_service_handler, schema=schema
+            DOMAIN, irhvac_service, async_service_handler, schema=spec.schema
         )
 
 
