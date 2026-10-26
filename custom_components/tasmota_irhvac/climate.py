@@ -67,6 +67,8 @@ from homeassistant.helpers import event as ha_event
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util.unit_conversion import TemperatureConverter
 
+from .presets import FROST_SCHEMA, ClimatePresets
+
 from .const import (
     ATTR_BEEP,
     ATTR_CLEAN,
@@ -266,6 +268,7 @@ PLATFORM_SCHEMA = CLIMATE_PLATFORM_SCHEMA.extend(
         ),
         vol.Optional(CONF_IGNORE_OFF_TEMP, default=DEFAULT_IGNORE_OFF_TEMP): cv.boolean,
         vol.Optional(CONF_SPECIAL_MODE, default=""): cv.string,
+        vol.Optional("frost_protection"): FROST_SCHEMA,
     }
 )
 
@@ -592,6 +595,12 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         if self._attr_swing_mode is not None:
             self._support_flags = self._support_flags | ClimateEntityFeature.SWING_MODE
 
+        self._presets = (
+            ClimatePresets(self, config["frost_protection"])
+            if "frost_protection" in config
+            else None
+        )
+
     async def async_added_to_hass(self):
         # Replacing `async_track_state_change` with `async_track_state_change_event`
         # See, https://developers.home-assistant.io/blog/2024/04/13/deprecate_async_track_state_change/
@@ -673,6 +682,9 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         for key in self._toggle_list:
             setattr(self, "_" + key.lower(), "off")
 
+        if self._presets:
+            self._presets.restore(old_state)
+
         if self._temp_sensor:
             regist_track_state_change_event(self._temp_sensor)
 
@@ -726,6 +738,9 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
 
             # By now the payload must include an `IRHVAC` field.
             if "IRHVAC" not in json_payload:
+                if self._presets:
+                    self._presets.feedback(json_payload, {})
+                    self.async_schedule_update_ha_state()
                 return
 
             payload = json_payload["IRHVAC"]
@@ -829,6 +844,9 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
                 for key in self._toggle_list:
                     setattr(self, "_" + key.lower(), "off")
 
+                if self._presets:
+                    self._presets.feedback(json_payload, payload)
+
                 # Update HA UI and State
                 self.async_schedule_update_ha_state()
 
@@ -900,9 +918,12 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes of the device."""
-        return {
+        attributes = {
             attr: getattr(self, "_" + prop) for attr, prop in ATTRIBUTES_IRHVAC.items()
         }
+        if self._presets:
+            attributes.update(self._presets.attributes)
+        return attributes
 
     @property
     def last_on_mode(self):
@@ -925,6 +946,8 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
 
     async def async_turn_off(self):
         """Turn thermostat off."""
+        if self._presets:
+            self._presets.leave()
         self._attr_hvac_mode = HVACMode.OFF
         self.power_mode = STATE_OFF
         await self.async_send_cmd()
@@ -944,6 +967,8 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
             and self._attr_target_temperature_step >= 1
         ):
             temperature = self._normalize_settemp(temperature)
+        if self._presets:
+            self._presets.prepare_temperature(temperature, hvac_mode)
         self._attr_target_temperature = temperature
         if not self._attr_hvac_mode == HVACMode.OFF:
             self.power_mode = STATE_ON
@@ -992,6 +1017,11 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
         """Set new target econo mode."""
         if econo not in ON_OFF_LIST:
             return
+        if self._presets and self._presets.command == "econo":
+            if econo.lower() == "on":
+                self._presets.activate()
+            else:
+                self._presets.leave()
         self._econo = econo.lower()
         self._state_mode = state_mode
         await self.async_send_cmd()
@@ -1194,6 +1224,9 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
 
         This method must be run in the event loop and returns a coroutine.
         """
+        if self._presets:
+            await self._presets.set_preset(preset_mode)
+            return
         if preset_mode == PRESET_AWAY and not self._is_away:
             self._is_away = True
             self._saved_target_temp = self._attr_target_temperature
@@ -1207,6 +1240,8 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
     async def set_mode(self, hvac_mode):
         """Set hvac mode."""
         hvac_mode = hvac_mode.lower()
+        if self._presets:
+            self._presets.leave()
         if hvac_mode not in self._attr_hvac_modes or hvac_mode == HVACMode.OFF:
             self._attr_hvac_mode = HVACMode.OFF
             self._enabled = False
@@ -1218,6 +1253,8 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
 
     async def send_ir(self):
         """Send the payload to tasmota mqtt topic."""
+        if self._presets and await self._presets.send_raw_if_active():
+            return
         fan_speed = self.fan_mode
 
         # tweak for some ELECTRA_AC devices
@@ -1262,7 +1299,13 @@ class TasmotaIrhvac(RestoreEntity, ClimateEntity):
             "Power": self.power_mode,
             "Mode": self._last_on_mode if self._keep_mode else self._attr_hvac_mode,
             "Celsius": self._celsius,
-            "Temp": round(self._attr_target_temperature / self._temp_precision)
+            "Temp": round(
+                (
+                    self._presets.command_temperature
+                    if self._presets
+                    else self._attr_target_temperature
+                ) / self._temp_precision
+            )
             * self._temp_precision,
             "FanSpeed": fan_speed,
             "SwingV": self._swingv,

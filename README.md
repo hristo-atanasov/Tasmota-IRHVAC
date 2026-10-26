@@ -40,6 +40,56 @@ You can also remove all lines that doesn’t need to be changed and are marked w
 Change the *name* with the desired name.
 After you finish with the config, save it and restart Home Assistant. Once restarted you can add in LovelaceUI a new *thermostat card* and select the newly integrated AC.
 
+### Native frost protection
+
+The optional `frost_protection` setting adds **Frost protection** and **Comfort**
+presets to the thermostat. Frost protection sends a native command rather than a
+low ordinary setpoint. Comfort heats to `comfort_temperature` (20 by default).
+None restores the previous normal target and fan mode; a temperature adjustment,
+another HVAC mode, or Off exits the preset. Restarting restores state without
+transmitting IR. These presets replace Away when configured.
+
+For a GREE model where **Econo On in Heat mode has been verified** to select frost
+protection, add:
+
+```yaml
+frost_protection:
+  command: econo
+  temperature: 8
+  comfort_temperature: 20
+```
+
+This model-specific mapping keeps Econo on while frost protection is selected.
+It comes from a local GREE/YAW1F customization and still needs physical
+confirmation; Econo is not a universal frost-protection flag.
+
+For a captured IRsend command (this example was used for Fujitsu/ARRAH2E 10°C Heat):
+
+```yaml
+frost_protection:
+  command: irsend
+  temperature: 10
+  comfort_temperature: 20
+  topic: cmnd/fujitsu_ac/irsend
+  payload:
+    Protocol: FUJITSU_AC
+    Bits: 128
+    Data: "0x1463001010FE0930410B001806122034"
+  match_state:
+    Power: "On"
+    Mode: Fan
+    Temp: 10
+```
+
+Capture and verify the frame for your AC. Matching received protocol/Data selects
+the preset; optional `match_state` also recognizes decoded IRHVAC feedback when
+all configured fields match (strings ignore case). Fujitsu encodes 10°C Heat as
+Fan mode; the thermostat presents it as heating. Comfort uses normal IRHVAC.
+
+Temperatures use the units selected by `celsius_mode`. Keep `min_temp`/`max_temp`
+at the normal adjustment limits; the fixed frost target may be lower. Use the
+thermostat's `climate-preset-modes` feature to display the presets.
+
 This is a pic of 2 of my Tasmota IR transceivers, that I have mounted under my ACs so when using the ACs remote they have direct visual and update the state in Home Assistant (yes, it can do that too).
 
 ![image2](/images/multisensors.jpeg)

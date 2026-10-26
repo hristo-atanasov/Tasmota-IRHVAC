@@ -1,0 +1,21 @@
+name: Test presets
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-presets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test preset transitions with mocked MQTT
+        run: |
+          docker run --rm --network none --entrypoint python \
+            -v "$GITHUB_WORKSPACE:/work:ro" -w /work \
+            ghcr.io/home-assistant/home-assistant:2026.10.1 \
+            -m unittest discover -s tests -p test_hvac_presets.py -v
